@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Plus, Trash2, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,10 @@ export default function MileageTracker({ entries, onAdd, onDelete }: MileageTrac
   const [note, setNote] = useState("");
 
   const handleAdd = () => {
-    if (!km || isNaN(Number(km))) return;
+    if (!km || isNaN(Number(km))) {
+      toast.error("Inserisci un valore km valido");
+      return;
+    }
     onAdd({
       date: new Date().toLocaleDateString("it-IT"),
       km: Number(km),
@@ -23,6 +27,7 @@ export default function MileageTracker({ entries, onAdd, onDelete }: MileageTrac
     });
     setKm("");
     setNote("");
+    toast.success("Chilometri registrati!");
   };
 
   return (

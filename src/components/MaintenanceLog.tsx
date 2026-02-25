@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceEntry } from "@/hooks/useCarData";
+import { toast } from "sonner";
 
 const TYPE_CONFIG = {
   tagliando: { label: "Tagliando", icon: Wrench, color: "text-primary" },
@@ -19,14 +20,18 @@ interface MaintenanceLogProps {
 }
 
 export default function MaintenanceLog({ entries, onAdd, onDelete }: MaintenanceLogProps) {
+  const today = new Date().toISOString().split("T")[0];
   const [type, setType] = useState<MaintenanceEntry["type"]>("tagliando");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(today);
   const [km, setKm] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState("");
 
   const handleAdd = () => {
-    if (!date || !km || !description) return;
+    if (!date || !km || !description) {
+      toast.error("Compila tutti i campi obbligatori (data, km, descrizione)");
+      return;
+    }
     onAdd({
       type,
       date,
@@ -34,10 +39,10 @@ export default function MaintenanceLog({ entries, onAdd, onDelete }: Maintenance
       description,
       cost: cost ? Number(cost) : undefined,
     });
-    setDate("");
     setKm("");
     setDescription("");
     setCost("");
+    toast.success("Manutenzione aggiunta!");
   };
 
   return (
