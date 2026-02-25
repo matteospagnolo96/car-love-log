@@ -1,41 +1,44 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CarData } from "@/hooks/useCarData";
-import { Car, Save } from "lucide-react";
+import { Vehicle } from "@/hooks/useCarData";
+import { Car, Bike, Save } from "lucide-react";
 
 interface CarSettingsProps {
-  car: CarData;
-  onUpdate: (info: Partial<CarData>) => void;
+  vehicle: Vehicle;
+  onUpdate: (info: Partial<Vehicle>) => void;
 }
 
-export default function CarSettings({ car, onUpdate }: CarSettingsProps) {
-  const [brand, setBrand] = useState(car.brand);
-  const [model, setModel] = useState(car.model);
-  const [year, setYear] = useState(String(car.year));
-  const [plate, setPlate] = useState(car.plate);
+export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
+  const [brand, setBrand] = useState(vehicle.brand);
+  const [model, setModel] = useState(vehicle.model);
+  const [year, setYear] = useState(String(vehicle.year));
+  const [plate, setPlate] = useState(vehicle.plate);
 
   const handleSave = () => {
     onUpdate({ brand, model, year: Number(year), plate });
   };
 
+  const Icon = vehicle.vehicleType === "moto" ? Bike : Car;
+  const label = vehicle.vehicleType === "moto" ? "Dati Moto" : "Dati Auto";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-primary/10">
-          <Car className="h-6 w-6 text-primary" />
+          <Icon className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-2xl font-heading font-bold">Dati Auto</h2>
+        <h2 className="text-2xl font-heading font-bold">{label}</h2>
       </div>
 
       <div className="bg-card rounded-lg p-5 border border-border/50 space-y-4 max-w-lg">
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">Marca</label>
-          <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="es. Fiat" className="bg-muted border-border" />
+          <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder={vehicle.vehicleType === "moto" ? "es. Ducati" : "es. Fiat"} className="bg-muted border-border" />
         </div>
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">Modello</label>
-          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="es. Panda" className="bg-muted border-border" />
+          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={vehicle.vehicleType === "moto" ? "es. Monster" : "es. Panda"} className="bg-muted border-border" />
         </div>
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">Anno</label>

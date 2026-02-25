@@ -1,4 +1,5 @@
-import { Car, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon } from "lucide-react";
+import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon } from "lucide-react";
+import type { VehicleType } from "@/hooks/useCarData";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -29,6 +30,7 @@ interface DashboardProps {
   model: string;
   year: number;
   plate: string;
+  vehicleType: VehicleType;
   lastTagliando?: { date: string; km: number };
   lastRevisione?: { date: string; km: number };
   lastGomme?: { date: string; km: number };
@@ -41,18 +43,20 @@ export default function Dashboard({
   model,
   year,
   plate,
+  vehicleType,
   lastTagliando,
   lastRevisione,
   lastGomme,
   totalMaintenances,
 }: DashboardProps) {
-  const carTitle = brand && model ? `${brand} ${model}` : "La mia auto";
+  const carTitle = brand && model ? `${brand} ${model}` : vehicleType === "moto" ? "La mia moto" : "La mia auto";
+  const VehicleIcon = vehicleType === "moto" ? Bike : Car;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <div className="p-3 rounded-xl bg-primary/10">
-          <Car className="h-8 w-8 text-primary" />
+          <VehicleIcon className="h-8 w-8 text-primary" />
         </div>
         <div>
           <h1 className="text-3xl font-heading font-bold">{carTitle}</h1>
