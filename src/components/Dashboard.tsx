@@ -1,5 +1,5 @@
 import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon } from "lucide-react";
-import type { VehicleType, MileageEntry, MaintenanceEntry } from "@/hooks/useCarData";
+import type { VehicleType, MileageEntry, MaintenanceEntry, Reminder } from "@/hooks/useCarData";
 import MileageChart from "./MileageChart";
 import MaintenanceReminders from "./MaintenanceReminders";
 
@@ -39,6 +39,10 @@ interface DashboardProps {
   totalMaintenances: number;
   mileageLog: MileageEntry[];
   maintenanceLog: MaintenanceEntry[];
+  reminders: Reminder[];
+  onAddReminder: (reminder: Omit<Reminder, "id">) => void;
+  onDeleteReminder: (id: string) => void;
+  onEditReminder: (id: string, data: Partial<Omit<Reminder, "id">>) => void;
 }
 
 export default function Dashboard({
@@ -54,6 +58,10 @@ export default function Dashboard({
   totalMaintenances,
   mileageLog,
   maintenanceLog,
+  reminders,
+  onAddReminder,
+  onDeleteReminder,
+  onEditReminder,
 }: DashboardProps) {
   const carTitle = brand && model ? `${brand} ${model}` : vehicleType === "moto" ? "La mia moto" : "La mia auto";
   const VehicleIcon = vehicleType === "moto" ? Bike : Car;
@@ -97,7 +105,7 @@ export default function Dashboard({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MileageChart entries={mileageLog} maintenanceEntries={maintenanceLog} />
-        <MaintenanceReminders entries={maintenanceLog} currentKm={currentKm} />
+        <MaintenanceReminders reminders={reminders} currentKm={currentKm} onAdd={onAddReminder} onDelete={onDeleteReminder} onEdit={onEditReminder} />
       </div>
     </div>
   );

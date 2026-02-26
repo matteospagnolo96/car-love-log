@@ -28,6 +28,11 @@ const Index = () => {
     updateCarInfo,
     deleteMaintenance,
     deleteMileage,
+    editMileage,
+    editMaintenance,
+    addReminder,
+    deleteReminder,
+    editReminder,
   } = useCarData();
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
@@ -95,13 +100,17 @@ const Index = () => {
                 totalMaintenances={activeVehicle.maintenanceLog.length}
                 mileageLog={activeVehicle.mileageLog}
                 maintenanceLog={activeVehicle.maintenanceLog}
+                reminders={activeVehicle.reminders || []}
+                onAddReminder={addReminder}
+                onDeleteReminder={deleteReminder}
+                onEditReminder={editReminder}
               />
             )}
             {activeTab === "km" && (
-              <MileageTracker entries={activeVehicle.mileageLog} onAdd={addMileage} onDelete={deleteMileage} />
+              <MileageTracker entries={activeVehicle.mileageLog} onAdd={addMileage} onDelete={deleteMileage} onEdit={editMileage} />
             )}
             {activeTab === "manutenzione" && (
-              <MaintenanceLog entries={activeVehicle.maintenanceLog} onAdd={addMaintenance} onDelete={deleteMaintenance} />
+              <MaintenanceLog entries={activeVehicle.maintenanceLog} onAdd={addMaintenance} onDelete={deleteMaintenance} onEdit={editMaintenance} />
             )}
             {activeTab === "auto" && <CarSettings vehicle={activeVehicle} onUpdate={updateCarInfo} />}
           </main>

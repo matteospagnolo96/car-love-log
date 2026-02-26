@@ -20,6 +20,13 @@ export interface MaintenanceEntry {
 
 export type VehicleType = "auto" | "moto";
 
+export interface Reminder {
+  id: string;
+  label: string;
+  dueDate?: string;
+  dueKm?: number;
+}
+
 export interface Vehicle {
   id: string;
   vehicleType: VehicleType;
@@ -31,6 +38,7 @@ export interface Vehicle {
   currentKm: number;
   mileageLog: MileageEntry[];
   maintenanceLog: MaintenanceEntry[];
+  reminders: Reminder[];
 }
 
 export interface GarageData {
@@ -50,6 +58,7 @@ function createVehicle(vehicleType: VehicleType): Vehicle {
     currentKm: 0,
     mileageLog: [],
     maintenanceLog: [],
+    reminders: [],
   };
 }
 
@@ -77,6 +86,7 @@ function migrateData(): GarageData {
       currentKm: old.currentKm || 0,
       mileageLog: old.mileageLog || [],
       maintenanceLog: old.maintenanceLog || [],
+      reminders: old.reminders || [],
     };
     const garage: GarageData = { vehicles: [vehicle], activeVehicleId: vehicle.id };
     localStorage.removeItem("car-data");
@@ -166,6 +176,47 @@ export function useCarData() {
     }));
   };
 
+  const editMileage = (id: string, data: Partial<Omit<MileageEntry, "id">>) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      mileageLog: v.mileageLog.map((e) => (e.id === id ? { ...e, ...data } : e)),
+    }));
+  };
+
+  const editMaintenance = (id: string, data: Partial<Omit<MaintenanceEntry, "id">>) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      maintenanceLog: v.maintenanceLog.map((e) => (e.id === id ? { ...e, ...data } : e)),
+    }));
+  };
+
+  const addReminder = (reminder: Omit<Reminder, "id">) => {
+    if (!activeVehicle) return;
+    const newReminder = { ...reminder, id: crypto.randomUUID() };
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      reminders: [...v.reminders, newReminder],
+    }));
+  };
+
+  const deleteReminder = (id: string) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      reminders: (v.reminders || []).filter((r) => r.id !== id),
+    }));
+  };
+
+  const editReminder = (id: string, data: Partial<Omit<Reminder, "id">>) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      reminders: (v.reminders || []).map((r) => (r.id === id ? { ...r, ...data } : r)),
+    }));
+  };
+
   return {
     garage,
     activeVehicle,
@@ -177,5 +228,10 @@ export function useCarData() {
     updateCarInfo,
     deleteMaintenance,
     deleteMileage,
+    editMileage,
+    editMaintenance,
+    addReminder,
+    deleteReminder,
+    editReminder,
   };
 }
