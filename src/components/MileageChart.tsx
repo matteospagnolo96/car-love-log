@@ -1,32 +1,41 @@
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
-import type { MileageEntry } from "@/hooks/useCarData";
+import type { MileageEntry, MaintenanceEntry } from "@/hooks/useCarData";
 
 interface MileageChartProps {
   entries: MileageEntry[];
+  maintenanceEntries: MaintenanceEntry[];
 }
 
-export default function MileageChart({ entries }: MileageChartProps) {
+export default function MileageChart({ entries, maintenanceEntries }: MileageChartProps) {
   const chartData = useMemo(() => {
-    if (!entries.length) return [];
-    return [...entries]
-      .sort((a, b) => {
-        const parseDate = (d: string) => {
-          // handle both dd/mm/yyyy and yyyy-mm-dd
-          if (d.includes("/")) {
-            const [day, month, year] = d.split("/");
-            return new Date(`${year}-${month}-${day}`).getTime();
-          }
-          return new Date(d).getTime();
-        };
-        return parseDate(a.date) - parseDate(b.date);
-      })
-      .map((e) => ({
-        date: e.date,
-        km: e.km,
-      }));
-  }, [entries]);
+    const parseDate = (d: string) => {
+      if (d.includes("/")) {
+        const [day, month, year] = d.split("/");
+        return new Date(`${year}-${month}-${day}`).getTime();
+      }
+      return new Date(d).getTime();
+    };
+
+    const allPoints = [
+      ...entries.map((e) => ({ date: e.date, km: e.km, ts: parseDate(e.date) })),
+      ...maintenanceEntries.map((e) => ({ date: new Date(e.date).toLocaleDateString("it-IT"), km: e.km, ts: parseDate(e.date) })),
+    ];
+
+    // Deduplicate by keeping highest km per date
+    const byDate = new Map<number, { date: string; km: number }>();
+    allPoints.forEach((p) => {
+      const existing = byDate.get(p.ts);
+      if (!existing || p.km > existing.km) {
+        byDate.set(p.ts, { date: p.date, km: p.km });
+      }
+    });
+
+    return Array.from(byDate.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([, v]) => v);
+  }, [entries, maintenanceEntries]);
 
   if (chartData.length < 2) {
     return (
