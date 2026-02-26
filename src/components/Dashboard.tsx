@@ -1,5 +1,7 @@
 import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon } from "lucide-react";
-import type { VehicleType } from "@/hooks/useCarData";
+import type { VehicleType, MileageEntry, MaintenanceEntry } from "@/hooks/useCarData";
+import MileageChart from "./MileageChart";
+import MaintenanceReminders from "./MaintenanceReminders";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -35,6 +37,8 @@ interface DashboardProps {
   lastRevisione?: { date: string; km: number };
   lastGomme?: { date: string; km: number };
   totalMaintenances: number;
+  mileageLog: MileageEntry[];
+  maintenanceLog: MaintenanceEntry[];
 }
 
 export default function Dashboard({
@@ -48,6 +52,8 @@ export default function Dashboard({
   lastRevisione,
   lastGomme,
   totalMaintenances,
+  mileageLog,
+  maintenanceLog,
 }: DashboardProps) {
   const carTitle = brand && model ? `${brand} ${model}` : vehicleType === "moto" ? "La mia moto" : "La mia auto";
   const VehicleIcon = vehicleType === "moto" ? Bike : Car;
@@ -87,6 +93,11 @@ export default function Dashboard({
           subtitle={lastGomme ? `a ${lastGomme.km.toLocaleString("it-IT")} km` : "Non registrato"}
         />
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MileageChart entries={mileageLog} />
+        <MaintenanceReminders entries={maintenanceLog} currentKm={currentKm} />
       </div>
     </div>
   );

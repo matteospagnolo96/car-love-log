@@ -93,6 +93,8 @@ const Index = () => {
                 lastRevisione={lastOfType("revisione")}
                 lastGomme={lastOfType("gomme")}
                 totalMaintenances={activeVehicle.maintenanceLog.length}
+                mileageLog={activeVehicle.mileageLog}
+                maintenanceLog={activeVehicle.maintenanceLog}
               />
             )}
             {activeTab === "km" && (
