@@ -2,11 +2,54 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Vehicle } from "@/hooks/useCarData";
-import { Car, Bike, Save } from "lucide-react";
+import { Car, Bike, Save, Download } from "lucide-react";
+import { toast } from "sonner";
 
 interface CarSettingsProps {
   vehicle: Vehicle;
   onUpdate: (info: Partial<Vehicle>) => void;
+}
+
+function exportVehicleCSV(vehicle: Vehicle) {
+  const lines: string[] = [];
+
+  // Vehicle info
+  lines.push("=== DATI VEICOLO ===");
+  lines.push("Tipo,Marca,Modello,Anno,Targa,Km Attuali");
+  lines.push(`${vehicle.vehicleType},${vehicle.brand},${vehicle.model},${vehicle.year},${vehicle.plate},${vehicle.currentKm}`);
+  lines.push("");
+
+  // Mileage log
+  lines.push("=== REGISTRO CHILOMETRI ===");
+  lines.push("Data,Km,Note");
+  vehicle.mileageLog.forEach((e) => {
+    lines.push(`${e.date},${e.km},"${e.note || ""}"`);
+  });
+  lines.push("");
+
+  // Maintenance log
+  lines.push("=== REGISTRO MANUTENZIONE ===");
+  lines.push("Data,Tipo,Descrizione,Km,Costo");
+  vehicle.maintenanceLog.forEach((e) => {
+    lines.push(`${e.date},${e.type},"${e.description}",${e.km},${e.cost || ""}`);
+  });
+  lines.push("");
+
+  // Reminders
+  lines.push("=== PROMEMORIA ===");
+  lines.push("Etichetta,Scadenza Data,Scadenza Km");
+  (vehicle.reminders || []).forEach((r) => {
+    lines.push(`"${r.label}",${r.dueDate || ""},${r.dueKm || ""}`);
+  });
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${vehicle.brand || vehicle.vehicleType}_${vehicle.model || "veicolo"}_export.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success("CSV esportato!");
 }
 
 export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
@@ -48,9 +91,14 @@ export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
           <label className="text-sm text-muted-foreground">Targa</label>
           <Input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="es. AB123CD" className="bg-muted border-border" />
         </div>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" /> Salva
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={handleSave} className="gap-2">
+            <Save className="h-4 w-4" /> Salva
+          </Button>
+          <Button variant="outline" onClick={() => exportVehicleCSV(vehicle)} className="gap-2">
+            <Download className="h-4 w-4" /> Esporta CSV
+          </Button>
+        </div>
       </div>
     </div>
   );

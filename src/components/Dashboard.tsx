@@ -1,4 +1,5 @@
-import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon } from "lucide-react";
+import { useMemo } from "react";
+import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon, Euro } from "lucide-react";
 import type { VehicleType, MileageEntry, MaintenanceEntry, Reminder } from "@/hooks/useCarData";
 import MileageChart from "./MileageChart";
 import MaintenanceReminders from "./MaintenanceReminders";
@@ -66,6 +67,22 @@ export default function Dashboard({
   const carTitle = brand && model ? `${brand} ${model}` : vehicleType === "moto" ? "La mia moto" : "La mia auto";
   const VehicleIcon = vehicleType === "moto" ? Bike : Car;
 
+  const costSummary = useMemo(() => {
+    const total = maintenanceLog.reduce((sum, e) => sum + (e.cost || 0), 0);
+    const byType: Record<string, number> = {};
+    maintenanceLog.forEach((e) => {
+      byType[e.type] = (byType[e.type] || 0) + (e.cost || 0);
+    });
+    return { total, byType };
+  }, [maintenanceLog]);
+
+  const typeLabels: Record<string, string> = {
+    tagliando: "Tagliando",
+    revisione: "Revisione",
+    gomme: "Cambio Gomme",
+    altro: "Altro",
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -101,7 +118,23 @@ export default function Dashboard({
           subtitle={lastGomme ? `a ${lastGomme.km.toLocaleString("it-IT")} km` : "Non registrato"}
         />
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
+        <StatCard icon={Euro} label="Costi totali" value={`€${costSummary.total.toLocaleString("it-IT")}`} subtitle="manutenzione" accent />
       </div>
+
+      {/* Riepilogo costi per tipo */}
+      {costSummary.total > 0 && (
+        <div className="bg-card rounded-lg p-5 border border-border/50">
+          <h3 className="text-sm font-heading font-semibold mb-3 text-muted-foreground">Riepilogo Costi Manutenzione</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Object.entries(costSummary.byType).map(([type, amount]) => (
+              <div key={type} className="text-center p-3 rounded-md bg-muted/50">
+                <p className="text-xs text-muted-foreground">{typeLabels[type] || type}</p>
+                <p className="text-lg font-bold">€{amount.toLocaleString("it-IT")}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MileageChart entries={mileageLog} maintenanceEntries={maintenanceLog} />
