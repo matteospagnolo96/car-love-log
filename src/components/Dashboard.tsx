@@ -102,20 +102,20 @@ export default function Dashboard({
         <StatCard
           icon={Wrench}
           label="Ultimo tagliando"
-          value={lastTagliando ? lastTagliando.date : "—"}
-          subtitle={lastTagliando ? `a ${lastTagliando.km.toLocaleString("it-IT")} km` : "Non registrato"}
+          value={lastTagliando ? `${lastTagliando.km.toLocaleString("it-IT")} km` : "—"}
+          subtitle={lastTagliando ? lastTagliando.date : "Non registrato"}
         />
         <StatCard
           icon={FileCheck}
           label="Ultima revisione"
-          value={lastRevisione ? lastRevisione.date : "—"}
-          subtitle={lastRevisione ? `a ${lastRevisione.km.toLocaleString("it-IT")} km` : "Non registrata"}
+          value={lastRevisione ? `${lastRevisione.km.toLocaleString("it-IT")} km` : "—"}
+          subtitle={lastRevisione ? lastRevisione.date : "Non registrata"}
         />
         <StatCard
           icon={CircleDot}
           label="Cambio gomme"
-          value={lastGomme ? lastGomme.date : "—"}
-          subtitle={lastGomme ? `${(currentKm - lastGomme.km).toLocaleString("it-IT")} km percorsi` : "Non registrato"}
+          value={lastGomme ? `${(currentKm - lastGomme.km).toLocaleString("it-IT")} km` : "—"}
+          subtitle={lastGomme ? `dal ${lastGomme.date}` : "Non registrato"}
         />
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
         <StatCard icon={Euro} label="Costi totali" value={`€${costSummary.total.toLocaleString("it-IT")}`} subtitle="manutenzione" accent />
