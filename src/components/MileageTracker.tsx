@@ -19,18 +19,24 @@ export default function MileageTracker({ entries, onAdd, onDelete, onEdit }: Mil
   const [editKm, setEditKm] = useState("");
   const [editNote, setEditNote] = useState("");
 
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+
   const handleAdd = () => {
     if (!km || isNaN(Number(km))) {
       toast.error("Inserisci un valore km valido");
       return;
     }
+    const formattedDate = date
+      ? new Date(date).toLocaleDateString("it-IT")
+      : new Date().toLocaleDateString("it-IT");
     onAdd({
-      date: new Date().toLocaleDateString("it-IT"),
+      date: formattedDate,
       km: Number(km),
       note: note || undefined,
     });
     setKm("");
     setNote("");
+    setDate(new Date().toISOString().split("T")[0]);
     toast.success("Chilometri registrati!");
   };
 
@@ -60,7 +66,13 @@ export default function MileageTracker({ entries, onAdd, onDelete, onEdit }: Mil
       </div>
 
       <div className="bg-card rounded-lg p-5 border border-border/50 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="bg-muted border-border"
+          />
           <Input
             type="number"
             placeholder="Chilometri attuali"

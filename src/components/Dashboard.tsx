@@ -115,7 +115,7 @@ export default function Dashboard({
           icon={CircleDot}
           label="Cambio gomme"
           value={lastGomme ? lastGomme.date : "—"}
-          subtitle={lastGomme ? `a ${lastGomme.km.toLocaleString("it-IT")} km` : "Non registrato"}
+          subtitle={lastGomme ? `${(currentKm - lastGomme.km).toLocaleString("it-IT")} km percorsi` : "Non registrato"}
         />
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
         <StatCard icon={Euro} label="Costi totali" value={`€${costSummary.total.toLocaleString("it-IT")}`} subtitle="manutenzione" accent />
