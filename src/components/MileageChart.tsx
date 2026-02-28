@@ -19,22 +19,22 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
     };
 
     const allPoints = [
-      ...entries.map((e) => ({ date: e.date, km: e.km, ts: parseDate(e.date) })),
-      ...maintenanceEntries.map((e) => ({ date: new Date(e.date).toLocaleDateString("it-IT"), km: e.km, ts: parseDate(e.date) })),
+      ...entries.map((e) => ({ ts: parseDate(e.date), km: e.km })),
+      ...maintenanceEntries.map((e) => ({ ts: parseDate(e.date), km: e.km })),
     ];
 
-    // Deduplicate by keeping highest km per date
-    const byDate = new Map<number, { date: string; km: number }>();
+    // Deduplicate by keeping highest km per timestamp
+    const byDate = new Map<number, number>();
     allPoints.forEach((p) => {
       const existing = byDate.get(p.ts);
-      if (!existing || p.km > existing.km) {
-        byDate.set(p.ts, { date: p.date, km: p.km });
+      if (!existing || p.km > existing) {
+        byDate.set(p.ts, p.km);
       }
     });
 
     return Array.from(byDate.entries())
       .sort(([a], [b]) => a - b)
-      .map(([, v]) => v);
+      .map(([ts, km]) => ({ ts, km }));
   }, [entries, maintenanceEntries]);
 
   if (chartData.length < 2) {
@@ -46,6 +46,11 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
       </div>
     );
   }
+
+  const formatDate = (ts: number) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
+  };
 
   return (
     <div className="rounded-lg bg-card p-5 border border-border/50 space-y-4">
@@ -60,7 +65,11 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
-              dataKey="date"
+              dataKey="ts"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={formatDate}
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
               stroke="hsl(var(--border))"
             />
@@ -76,6 +85,7 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
                 borderRadius: "8px",
                 color: "hsl(var(--foreground))",
               }}
+              labelFormatter={(ts: number) => new Date(ts).toLocaleDateString("it-IT")}
               formatter={(value: number) => [`${value.toLocaleString("it-IT")} km`, "Chilometri"]}
             />
             <Line
