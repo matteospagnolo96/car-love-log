@@ -38,7 +38,10 @@ const Index = () => {
 
   const lastOfType = (type: string) => {
     if (!activeVehicle) return undefined;
-    const entry = activeVehicle.maintenanceLog.find((e) => e.type === type);
+    const sorted = activeVehicle.maintenanceLog
+      .filter((e) => e.type === type)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const entry = sorted[0];
     return entry ? { date: new Date(entry.date).toLocaleDateString("it-IT"), km: entry.km } : undefined;
   };
 
