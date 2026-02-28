@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Vehicle } from "@/hooks/useCarData";
 import { Car, Bike, Save, Download } from "lucide-react";
 import { toast } from "sonner";
+import ImportCSV from "./ImportCSV";
 
 interface CarSettingsProps {
   vehicle: Vehicle;
@@ -91,13 +92,14 @@ export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
           <label className="text-sm text-muted-foreground">Targa</label>
           <Input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="es. AB123CD" className="bg-muted border-border" />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <Button onClick={handleSave} className="gap-2">
             <Save className="h-4 w-4" /> Salva
           </Button>
           <Button variant="outline" onClick={() => exportVehicleCSV(vehicle)} className="gap-2">
             <Download className="h-4 w-4" /> Esporta CSV
           </Button>
+          <ImportCSV onImport={onUpdate} />
         </div>
       </div>
     </div>
