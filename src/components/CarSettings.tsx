@@ -92,10 +92,14 @@ export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
           <label className="text-sm text-muted-foreground">Targa</label>
           <Input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="es. AB123CD" className="bg-muted border-border" />
         </div>
+        <Button onClick={handleSave} className="gap-2 w-full sm:w-auto">
+          <Save className="h-4 w-4" /> Salva
+        </Button>
+      </div>
+
+      <div className="bg-card rounded-lg p-5 border border-border/50 space-y-3 max-w-lg">
+        <h3 className="text-sm font-heading font-semibold text-muted-foreground">Importa / Esporta Dati</h3>
         <div className="flex gap-3 flex-wrap">
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="h-4 w-4" /> Salva
-          </Button>
           <Button variant="outline" onClick={() => exportVehicleCSV(vehicle)} className="gap-2">
             <Download className="h-4 w-4" /> Esporta CSV
           </Button>
