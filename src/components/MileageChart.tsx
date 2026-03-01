@@ -62,7 +62,7 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="ts"
@@ -77,6 +77,7 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
               stroke="hsl(var(--border))"
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              width={35}
             />
             <Tooltip
               contentStyle={{
