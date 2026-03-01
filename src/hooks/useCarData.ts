@@ -170,10 +170,11 @@ export function useCarData() {
 
   const deleteMileage = (id: string) => {
     if (!activeVehicle) return;
-    updateVehicle(activeVehicle.id, (v) => ({
-      ...v,
-      mileageLog: v.mileageLog.filter((e) => e.id !== id),
-    }));
+    updateVehicle(activeVehicle.id, (v) => {
+      const remaining = v.mileageLog.filter((e) => e.id !== id);
+      const newMax = remaining.reduce((max, e) => Math.max(max, e.km), 0);
+      return { ...v, mileageLog: remaining, currentKm: newMax };
+    });
   };
 
   const editMileage = (id: string, data: Partial<Omit<MileageEntry, "id">>) => {
