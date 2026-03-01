@@ -112,7 +112,7 @@ export default function MaintenanceLog({ entries, onAdd, onDelete, onEdit }: Mai
           <p className="text-muted-foreground text-center py-8">Nessuna manutenzione registrata</p>
         )}
         {[...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((entry, i) => {
-          const config = TYPE_CONFIG[entry.type];
+          const config = TYPE_CONFIG[entry.type] || TYPE_CONFIG.altro;
           const Icon = config.icon;
           return (
             <div
