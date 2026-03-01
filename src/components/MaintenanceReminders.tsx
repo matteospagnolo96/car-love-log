@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import type { Reminder } from "@/hooks/useCarData";
 import { toast } from "sonner";
 
-type ReminderMode = "date" | "km";
+type ReminderMode = "date" | "km" | "both";
 
 interface MaintenanceRemindersProps {
   reminders: Reminder[];
@@ -33,18 +33,18 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
       toast.error("Inserisci un nome per il promemoria");
       return;
     }
-    if (mode === "date" && !dueDate) {
+    if ((mode === "date" || mode === "both") && !dueDate) {
       toast.error("Inserisci una data di scadenza");
       return;
     }
-    if (mode === "km" && !dueKm) {
+    if ((mode === "km" || mode === "both") && !dueKm) {
       toast.error("Inserisci i km di scadenza");
       return;
     }
     onAdd({
       label,
-      dueDate: mode === "date" ? dueDate : undefined,
-      dueKm: mode === "km" ? Number(dueKm) : undefined,
+      dueDate: (mode === "date" || mode === "both") ? dueDate : undefined,
+      dueKm: (mode === "km" || mode === "both") ? Number(dueKm) : undefined,
     });
     setLabel("");
     setDueDate("");
@@ -55,7 +55,7 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
   const startEdit = (r: Reminder) => {
     setEditingId(r.id);
     setEditLabel(r.label);
-    setEditMode(r.dueKm ? "km" : "date");
+    setEditMode(r.dueDate && r.dueKm ? "both" : r.dueKm ? "km" : "date");
     setEditDate(r.dueDate || "");
     setEditKm(r.dueKm ? String(r.dueKm) : "");
   };
@@ -64,8 +64,8 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
     if (!editingId || !editLabel) return;
     onEdit(editingId, {
       label: editLabel,
-      dueDate: editMode === "date" ? editDate || undefined : undefined,
-      dueKm: editMode === "km" ? Number(editKm) || undefined : undefined,
+      dueDate: (editMode === "date" || editMode === "both") ? editDate || undefined : undefined,
+      dueKm: (editMode === "km" || editMode === "both") ? Number(editKm) || undefined : undefined,
     });
     setEditingId(null);
     toast.success("Promemoria aggiornato!");
@@ -97,15 +97,15 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
 
       if (r.dueKm) {
         const kmLeft = r.dueKm - currentKm;
+        const kmText = kmLeft <= 0
+          ? `⚠️ Superati di ${Math.abs(kmLeft).toLocaleString("it-IT")} km`
+          : `Mancano ${kmLeft.toLocaleString("it-IT")} km`;
         if (kmLeft <= 0) {
           status = "overdue";
-          remaining = `⚠️ Superati di ${Math.abs(kmLeft).toLocaleString("it-IT")} km`;
         } else if (kmLeft <= 2000) {
           if (status !== "overdue") status = "warning";
-          remaining = `Mancano ${kmLeft.toLocaleString("it-IT")} km`;
-        } else {
-          remaining = `Mancano ${kmLeft.toLocaleString("it-IT")} km`;
         }
+        remaining = remaining ? `${remaining} · ${kmText}` : kmText;
       }
 
       return { ...r, status, remaining };
@@ -148,13 +148,18 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
               <RadioGroupItem value="km" id="mode-km" />
               <Label htmlFor="mode-km" className="text-sm flex items-center gap-1 cursor-pointer"><Gauge className="h-3.5 w-3.5" /> Chilometri</Label>
             </div>
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="both" id="mode-both" />
+              <Label htmlFor="mode-both" className="text-sm flex items-center gap-1 cursor-pointer"><Calendar className="h-3.5 w-3.5" /><Gauge className="h-3.5 w-3.5" /> Entrambi</Label>
+            </div>
           </RadioGroup>
         </div>
-        <div className="flex gap-2">
-          {mode === "date" ? (
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-muted border-border flex-1" />
-          ) : (
-            <Input type="number" placeholder="Km scadenza" value={dueKm} onChange={(e) => setDueKm(e.target.value)} className="bg-muted border-border flex-1" />
+        <div className="flex gap-2 flex-wrap">
+          {(mode === "date" || mode === "both") && (
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-muted border-border flex-1 min-w-[140px]" />
+          )}
+          {(mode === "km" || mode === "both") && (
+            <Input type="number" placeholder="Km scadenza" value={dueKm} onChange={(e) => setDueKm(e.target.value)} className="bg-muted border-border flex-1 min-w-[120px]" />
           )}
           <Button onClick={handleAdd} size="sm" className="gap-1">
             <Plus className="h-4 w-4" /> Aggiungi
@@ -184,10 +189,15 @@ export default function MaintenanceReminders({ reminders, currentKm, onAdd, onDe
                       <RadioGroupItem value="km" id={`edit-km-${editingId}`} />
                       <Label htmlFor={`edit-km-${editingId}`} className="text-xs cursor-pointer">Km</Label>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="both" id={`edit-both-${editingId}`} />
+                      <Label htmlFor={`edit-both-${editingId}`} className="text-xs cursor-pointer">Entrambi</Label>
+                    </div>
                   </RadioGroup>
-                  {editMode === "date" ? (
+                  {(editMode === "date" || editMode === "both") && (
                     <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="bg-muted border-border w-36" />
-                  ) : (
+                  )}
+                  {(editMode === "km" || editMode === "both") && (
                     <Input type="number" value={editKm} onChange={(e) => setEditKm(e.target.value)} placeholder="Km" className="bg-muted border-border w-24" />
                   )}
                 </div>
