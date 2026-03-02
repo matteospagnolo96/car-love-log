@@ -5,13 +5,22 @@ import MileageTracker from "@/components/MileageTracker";
 import MaintenanceLog from "@/components/MaintenanceLog";
 import CarSettings from "@/components/CarSettings";
 import VehicleSelector from "@/components/VehicleSelector";
-import { Gauge, Wrench, Settings, LayoutDashboard } from "lucide-react";
+import TireManager from "@/components/TireManager";
+import { Gauge, Wrench, LayoutDashboard, CircleDot, Settings } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "km", label: "Chilometri", icon: Gauge },
   { id: "manutenzione", label: "Manutenzione", icon: Wrench },
-  { id: "auto", label: "Dati Veicolo", icon: Settings },
+  { id: "gomme", label: "Gomme", icon: CircleDot },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -33,8 +42,13 @@ const Index = () => {
     addReminder,
     deleteReminder,
     editReminder,
+    addTireSet,
+    deleteTireSet,
+    editTireSet,
+    switchTires,
   } = useCarData();
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const lastOfType = (type: string) => {
     if (!activeVehicle) return undefined;
@@ -57,7 +71,24 @@ const Index = () => {
             onAdd={addVehicle}
             onDelete={deleteVehicle}
           />
-          <span className="text-xs text-muted-foreground hidden sm:block">AutoTracker</span>
+          <div className="flex items-center gap-2">
+            {activeVehicle && (
+              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Dati Veicolo</DialogTitle>
+                  </DialogHeader>
+                  <CarSettings vehicle={activeVehicle} onUpdate={updateCarInfo} />
+                </DialogContent>
+              </Dialog>
+            )}
+            <span className="text-xs text-muted-foreground hidden sm:block">AutoTracker</span>
+          </div>
         </div>
       </header>
 
@@ -115,7 +146,16 @@ const Index = () => {
             {activeTab === "manutenzione" && (
               <MaintenanceLog entries={activeVehicle.maintenanceLog} onAdd={addMaintenance} onDelete={deleteMaintenance} onEdit={editMaintenance} />
             )}
-            {activeTab === "auto" && <CarSettings vehicle={activeVehicle} onUpdate={updateCarInfo} />}
+            {activeTab === "gomme" && (
+              <TireManager
+                tireSets={activeVehicle.tireSets || []}
+                currentKm={activeVehicle.currentKm}
+                onAdd={addTireSet}
+                onDelete={deleteTireSet}
+                onEdit={editTireSet}
+                onSwitch={switchTires}
+              />
+            )}
           </main>
         </>
       ) : (
