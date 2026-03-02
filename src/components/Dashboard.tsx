@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Car, Bike, Gauge, Wrench, CircleDot, FileCheck, Settings, LucideIcon, Euro } from "lucide-react";
-import type { VehicleType, MileageEntry, MaintenanceEntry, Reminder } from "@/hooks/useCarData";
+import type { VehicleType, MileageEntry, MaintenanceEntry, Reminder, TireSet } from "@/hooks/useCarData";
+import { Badge } from "@/components/ui/badge";
 import MileageChart from "./MileageChart";
 import MaintenanceReminders from "./MaintenanceReminders";
 
@@ -41,6 +42,7 @@ interface DashboardProps {
   mileageLog: MileageEntry[];
   maintenanceLog: MaintenanceEntry[];
   reminders: Reminder[];
+  tireSets: TireSet[];
   onAddReminder: (reminder: Omit<Reminder, "id">) => void;
   onDeleteReminder: (id: string) => void;
   onEditReminder: (id: string, data: Partial<Omit<Reminder, "id">>) => void;
@@ -60,6 +62,7 @@ export default function Dashboard({
   mileageLog,
   maintenanceLog,
   reminders,
+  tireSets,
   onAddReminder,
   onDeleteReminder,
   onEditReminder,
@@ -82,6 +85,23 @@ export default function Dashboard({
     gomme: "Cambio Gomme",
     altro: "Altro",
   };
+
+  const TIRE_TYPE_LABELS: Record<string, string> = {
+    estive: "Estive",
+    invernali: "Invernali",
+    "4stagioni": "4 Stagioni",
+  };
+
+  const TIRE_TYPE_COLORS: Record<string, string> = {
+    estive: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+    invernali: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+    "4stagioni": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  };
+
+  const activeTire = tireSets.find((t) => t.active);
+  const activeTireKm = activeTire
+    ? activeTire.totalKm + (activeTire.installedAt != null ? Math.max(0, currentKm - activeTire.installedAt) : 0)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -120,6 +140,40 @@ export default function Dashboard({
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
         <StatCard icon={Euro} label="Costi totali" value={`€${costSummary.total.toLocaleString("it-IT")}`} subtitle="manutenzione" accent />
       </div>
+
+      {/* Riepilogo gomme montate */}
+      {activeTire && (
+        <div className="bg-card rounded-lg p-5 border border-border/50">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-md bg-primary/15 text-primary">
+              <CircleDot className="h-5 w-5" />
+            </div>
+            <h3 className="text-sm font-heading font-semibold text-muted-foreground">Gomme Montate</h3>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xl font-bold">{activeTire.label}</span>
+            <Badge variant="outline" className={TIRE_TYPE_COLORS[activeTire.type]}>
+              {TIRE_TYPE_LABELS[activeTire.type]}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-4 mt-2 flex-wrap">
+            <p className="text-sm">
+              <span className="font-medium">{activeTireKm.toLocaleString("it-IT")}</span>
+              <span className="text-muted-foreground"> km percorsi</span>
+            </p>
+            {activeTire.brand && (
+              <p className="text-sm text-muted-foreground">
+                {activeTire.brand} {activeTire.model}
+              </p>
+            )}
+            {activeTire.installedDate && (
+              <p className="text-xs text-muted-foreground">
+                Montate dal {new Date(activeTire.installedDate).toLocaleDateString("it-IT")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Riepilogo costi per tipo */}
       {costSummary.total > 0 && (

@@ -135,6 +135,7 @@ const Index = () => {
                 mileageLog={activeVehicle.mileageLog}
                 maintenanceLog={activeVehicle.maintenanceLog}
                 reminders={activeVehicle.reminders || []}
+                tireSets={activeVehicle.tireSets || []}
                 onAddReminder={addReminder}
                 onDeleteReminder={deleteReminder}
                 onEditReminder={editReminder}

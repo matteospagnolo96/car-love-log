@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check } from "lucide-react";
+import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,11 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
 
+  // Movement log form
+  const [movementTireId, setMovementTireId] = useState<string | null>(null);
+  const [movementKm, setMovementKm] = useState("");
+  const [movementDate, setMovementDate] = useState(new Date().toISOString().slice(0, 10));
+
   const activeTire = tireSets.find((t) => t.active);
 
   const handleAdd = () => {
@@ -97,6 +102,20 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
     toast.success("Gomme aggiornate!");
   };
 
+  const handleAddMovement = (tireId: string) => {
+    if (!movementKm || Number(movementKm) <= 0) {
+      toast.error("Inserisci i km percorsi");
+      return;
+    }
+    const tire = tireSets.find((t) => t.id === tireId);
+    if (!tire) return;
+    onEdit(tireId, { totalKm: tire.totalKm + Number(movementKm) });
+    setMovementTireId(null);
+    setMovementKm("");
+    setMovementDate(new Date().toISOString().slice(0, 10));
+    toast.success("Km aggiunti!");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -110,27 +129,6 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
           <Plus className="h-4 w-4" /> Nuove Gomme
         </Button>
       </div>
-
-      {/* Active tire summary */}
-      {activeTire && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-1">Gomme montate</p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-lg font-bold">{activeTire.label}</span>
-            <Badge variant="outline" className={TIRE_TYPE_COLORS[activeTire.type]}>
-              {TIRE_TYPE_LABELS[activeTire.type]}
-            </Badge>
-            <span className="text-sm text-muted-foreground ml-auto">
-              {getTireKm(activeTire, currentKm).toLocaleString("it-IT")} km percorsi
-            </span>
-          </div>
-          {activeTire.brand && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {activeTire.brand} {activeTire.model}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Add form */}
       {showForm && (
@@ -179,7 +177,7 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         </div>
       )}
 
-      {/* Tire list */}
+      {/* Tire cards grid */}
       {tireSets.length === 0 && !showForm && (
         <div className="text-center py-12 text-muted-foreground">
           <CircleDot className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -188,14 +186,15 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {tireSets.map((tire) => {
           const isEditing = editingId === tire.id;
           const km = getTireKm(tire, currentKm);
+          const isMovement = movementTireId === tire.id;
 
           if (isEditing) {
             return (
-              <div key={tire.id} className="bg-card border border-primary/30 rounded-lg p-4 space-y-3">
+              <div key={tire.id} className="rounded-lg bg-card p-5 border border-primary/30 space-y-3 animate-fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Nome</label>
@@ -243,34 +242,20 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
           return (
             <div
               key={tire.id}
-              className={`bg-card border rounded-lg p-4 transition-colors ${
+              className={`rounded-lg bg-card p-5 animate-fade-in border hover:border-primary/30 transition-colors ${
                 tire.active ? "border-primary/40" : "border-border/50"
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-semibold">{tire.label}</span>
-                    <Badge variant="outline" className={TIRE_TYPE_COLORS[tire.type]}>
-                      {TIRE_TYPE_LABELS[tire.type]}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-lg font-heading font-bold">{tire.label}</span>
+                  <Badge variant="outline" className={TIRE_TYPE_COLORS[tire.type]}>
+                    {TIRE_TYPE_LABELS[tire.type]}
+                  </Badge>
+                  {tire.active && (
+                    <Badge className="bg-primary/15 text-primary border-primary/30 text-xs">
+                      Montate
                     </Badge>
-                    {tire.active && (
-                      <Badge className="bg-primary/15 text-primary border-primary/30 text-xs">
-                        Montate
-                      </Badge>
-                    )}
-                  </div>
-                  {(tire.brand || tire.model) && (
-                    <p className="text-sm text-muted-foreground">{tire.brand} {tire.model}</p>
-                  )}
-                  <p className="text-sm mt-1">
-                    <span className="font-medium">{km.toLocaleString("it-IT")}</span>
-                    <span className="text-muted-foreground"> km percorsi</span>
-                  </p>
-                  {tire.installedDate && tire.active && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Montate dal {new Date(tire.installedDate).toLocaleDateString("it-IT")}
-                    </p>
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -321,6 +306,59 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
                   </AlertDialog>
                 </div>
               </div>
+
+              {(tire.brand || tire.model) && (
+                <p className="text-sm text-muted-foreground mb-2">{tire.brand} {tire.model}</p>
+              )}
+
+              <p className="text-2xl font-heading font-bold mb-1">
+                {km.toLocaleString("it-IT")} <span className="text-sm font-normal text-muted-foreground">km</span>
+              </p>
+
+              {tire.installedDate && tire.active && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  Montate dal {new Date(tire.installedDate).toLocaleDateString("it-IT")}
+                </p>
+              )}
+
+              {/* Movement form */}
+              {isMovement ? (
+                <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Aggiungi km percorsi</p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Km"
+                      value={movementKm}
+                      onChange={(e) => setMovementKm(e.target.value)}
+                      className="bg-muted border-border flex-1"
+                    />
+                    <Input
+                      type="date"
+                      value={movementDate}
+                      onChange={(e) => setMovementDate(e.target.value)}
+                      className="bg-muted border-border w-36"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleAddMovement(tire.id)} className="gap-1">
+                      <Check className="h-3.5 w-3.5" /> Salva
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setMovementTireId(null)}>
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 gap-2 text-xs"
+                  onClick={() => setMovementTireId(tire.id)}
+                >
+                  <Route className="h-3.5 w-3.5" /> Aggiungi km
+                </Button>
+              )}
             </div>
           );
         })}

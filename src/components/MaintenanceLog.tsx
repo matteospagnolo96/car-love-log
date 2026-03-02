@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Wrench, FileCheck, CircleDot, Settings, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, Wrench, FileCheck, Settings, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +9,6 @@ import { toast } from "sonner";
 const TYPE_CONFIG = {
   tagliando: { label: "Tagliando", icon: Wrench, color: "text-primary" },
   revisione: { label: "Revisione", icon: FileCheck, color: "text-info" },
-  gomme: { label: "Cambio Gomme", icon: CircleDot, color: "text-warning" },
   altro: { label: "Altro", icon: Settings, color: "text-muted-foreground" },
 } as const;
 
@@ -93,7 +92,6 @@ export default function MaintenanceLog({ entries, onAdd, onDelete, onEdit }: Mai
             <SelectContent>
               <SelectItem value="tagliando">🔧 Tagliando</SelectItem>
               <SelectItem value="revisione">📋 Revisione</SelectItem>
-              <SelectItem value="gomme">🛞 Cambio Gomme</SelectItem>
               <SelectItem value="altro">⚙️ Altro</SelectItem>
             </SelectContent>
           </Select>
