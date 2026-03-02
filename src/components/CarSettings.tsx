@@ -68,12 +68,6 @@ export default function CarSettings({ vehicle, onUpdate }: CarSettingsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Icon className="h-6 w-6 text-primary" />
-        </div>
-        <h2 className="text-2xl font-heading font-bold">{label}</h2>
-      </div>
 
       <div className="bg-card rounded-lg p-5 border border-border/50 space-y-4 max-w-lg">
         <div className="space-y-2">

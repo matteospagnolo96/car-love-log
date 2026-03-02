@@ -20,6 +20,20 @@ export interface MaintenanceEntry {
 
 export type VehicleType = "auto" | "moto";
 
+export type TireType = "estive" | "invernali" | "4stagioni";
+
+export interface TireSet {
+  id: string;
+  label: string;
+  type: TireType;
+  brand?: string;
+  model?: string;
+  installedAt?: number; // km when installed
+  installedDate?: string;
+  totalKm: number; // total km driven on these tires
+  active: boolean; // currently mounted
+}
+
 export interface Reminder {
   id: string;
   label: string;
@@ -39,6 +53,7 @@ export interface Vehicle {
   mileageLog: MileageEntry[];
   maintenanceLog: MaintenanceEntry[];
   reminders: Reminder[];
+  tireSets: TireSet[];
 }
 
 export interface GarageData {
@@ -59,6 +74,7 @@ function createVehicle(vehicleType: VehicleType): Vehicle {
     mileageLog: [],
     maintenanceLog: [],
     reminders: [],
+    tireSets: [],
   };
 }
 
@@ -87,6 +103,7 @@ function migrateData(): GarageData {
       mileageLog: old.mileageLog || [],
       maintenanceLog: old.maintenanceLog || [],
       reminders: old.reminders || [],
+      tireSets: [],
     };
     const garage: GarageData = { vehicles: [vehicle], activeVehicleId: vehicle.id };
     localStorage.removeItem("car-data");
@@ -218,6 +235,50 @@ export function useCarData() {
     }));
   };
 
+  const addTireSet = (tire: Omit<TireSet, "id">) => {
+    if (!activeVehicle) return;
+    const newTire = { ...tire, id: crypto.randomUUID() };
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      tireSets: [...(v.tireSets || []), newTire],
+    }));
+  };
+
+  const deleteTireSet = (id: string) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      tireSets: (v.tireSets || []).filter((t) => t.id !== id),
+    }));
+  };
+
+  const editTireSet = (id: string, data: Partial<Omit<TireSet, "id">>) => {
+    if (!activeVehicle) return;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      tireSets: (v.tireSets || []).map((t) => (t.id === id ? { ...t, ...data } : t)),
+    }));
+  };
+
+  const switchTires = (tireId: string) => {
+    if (!activeVehicle) return;
+    const currentKm = activeVehicle.currentKm;
+    updateVehicle(activeVehicle.id, (v) => ({
+      ...v,
+      tireSets: (v.tireSets || []).map((t) => {
+        if (t.active) {
+          // Deactivate current: accumulate km
+          const driven = currentKm - (t.installedAt || 0);
+          return { ...t, active: false, totalKm: t.totalKm + Math.max(0, driven) };
+        }
+        if (t.id === tireId) {
+          return { ...t, active: true, installedAt: currentKm, installedDate: new Date().toISOString().slice(0, 10) };
+        }
+        return t;
+      }),
+    }));
+  };
+
   return {
     garage,
     activeVehicle,
@@ -234,5 +295,9 @@ export function useCarData() {
     addReminder,
     deleteReminder,
     editReminder,
+    addTireSet,
+    deleteTireSet,
+    editTireSet,
+    switchTires,
   };
 }
