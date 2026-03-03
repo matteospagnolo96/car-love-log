@@ -5,15 +5,26 @@ import { Badge } from "@/components/ui/badge";
 import MileageChart from "./MileageChart";
 import MaintenanceReminders from "./MaintenanceReminders";
 
+function getTireKm(tire: TireSet, currentKm: number): number {
+  const history = tire.mountHistory || [];
+  let km = tire.totalKm || 0;
+  for (const event of history) {
+    const end = event.unmountedAt ?? (tire.active ? currentKm : event.mountedAt);
+    km += Math.max(0, end - event.mountedAt);
+  }
+  return km;
+}
+
 interface StatCardProps {
   icon: LucideIcon;
   label: string;
   value: string | number;
   subtitle?: string;
   accent?: boolean;
+  badge?: { label: string; className: string };
 }
 
-function StatCard({ icon: Icon, label, value, subtitle, accent }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, subtitle, accent, badge }: StatCardProps) {
   return (
     <div className="rounded-lg bg-card p-5 animate-fade-in border border-border/50 hover:border-primary/30 transition-colors">
       <div className="flex items-center gap-3 mb-3">
@@ -21,6 +32,11 @@ function StatCard({ icon: Icon, label, value, subtitle, accent }: StatCardProps)
           <Icon className="h-5 w-5" />
         </div>
         <span className="text-sm text-muted-foreground">{label}</span>
+        {badge && (
+          <Badge variant="outline" className={badge.className + " text-[10px] ml-auto"}>
+            {badge.label}
+          </Badge>
+        )}
       </div>
       <p className="text-2xl font-heading font-bold">{value}</p>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
@@ -37,7 +53,6 @@ interface DashboardProps {
   vehicleType: VehicleType;
   lastTagliando?: { date: string; km: number };
   lastRevisione?: { date: string; km: number };
-  lastGomme?: { date: string; km: number };
   totalMaintenances: number;
   mileageLog: MileageEntry[];
   maintenanceLog: MaintenanceEntry[];
@@ -48,6 +63,18 @@ interface DashboardProps {
   onEditReminder: (id: string, data: Partial<Omit<Reminder, "id">>) => void;
 }
 
+const TIRE_TYPE_LABELS: Record<string, string> = {
+  estive: "Estive",
+  invernali: "Invernali",
+  "4stagioni": "4 Stagioni",
+};
+
+const TIRE_TYPE_COLORS: Record<string, string> = {
+  estive: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  invernali: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  "4stagioni": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+};
+
 export default function Dashboard({
   currentKm,
   brand,
@@ -57,7 +84,6 @@ export default function Dashboard({
   vehicleType,
   lastTagliando,
   lastRevisione,
-  lastGomme,
   totalMaintenances,
   mileageLog,
   maintenanceLog,
@@ -82,26 +108,11 @@ export default function Dashboard({
   const typeLabels: Record<string, string> = {
     tagliando: "Tagliando",
     revisione: "Revisione",
-    gomme: "Cambio Gomme",
     altro: "Altro",
   };
 
-  const TIRE_TYPE_LABELS: Record<string, string> = {
-    estive: "Estive",
-    invernali: "Invernali",
-    "4stagioni": "4 Stagioni",
-  };
-
-  const TIRE_TYPE_COLORS: Record<string, string> = {
-    estive: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-    invernali: "bg-sky-500/15 text-sky-600 border-sky-500/30",
-    "4stagioni": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
-  };
-
   const activeTire = tireSets.find((t) => t.active);
-  const activeTireKm = activeTire
-    ? activeTire.totalKm + (activeTire.installedAt != null ? Math.max(0, currentKm - activeTire.installedAt) : 0)
-    : 0;
+  const activeTireKm = activeTire ? getTireKm(activeTire, currentKm) : 0;
 
   return (
     <div className="space-y-6">
@@ -133,47 +144,15 @@ export default function Dashboard({
         />
         <StatCard
           icon={CircleDot}
-          label="Cambio gomme"
-          value={lastGomme ? `${(currentKm - lastGomme.km).toLocaleString("it-IT")} km` : "—"}
-          subtitle={lastGomme ? `dal ${lastGomme.date}` : "Non registrato"}
+          label="Gomme"
+          value={activeTire ? `${activeTireKm.toLocaleString("it-IT")} km` : "—"}
+          subtitle={activeTire ? activeTire.label : "Nessuna montata"}
+          accent={!!activeTire}
+          badge={activeTire ? { label: TIRE_TYPE_LABELS[activeTire.type], className: TIRE_TYPE_COLORS[activeTire.type] } : undefined}
         />
         <StatCard icon={Settings} label="Manutenzioni" value={totalMaintenances} subtitle="totali registrate" />
         <StatCard icon={Euro} label="Costi totali" value={`€${costSummary.total.toLocaleString("it-IT")}`} subtitle="manutenzione" accent />
       </div>
-
-      {/* Riepilogo gomme montate */}
-      {activeTire && (
-        <div className="bg-card rounded-lg p-5 border border-border/50">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-md bg-primary/15 text-primary">
-              <CircleDot className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-heading font-semibold text-muted-foreground">Gomme Montate</h3>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xl font-bold">{activeTire.label}</span>
-            <Badge variant="outline" className={TIRE_TYPE_COLORS[activeTire.type]}>
-              {TIRE_TYPE_LABELS[activeTire.type]}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-4 mt-2 flex-wrap">
-            <p className="text-sm">
-              <span className="font-medium">{activeTireKm.toLocaleString("it-IT")}</span>
-              <span className="text-muted-foreground"> km percorsi</span>
-            </p>
-            {activeTire.brand && (
-              <p className="text-sm text-muted-foreground">
-                {activeTire.brand} {activeTire.model}
-              </p>
-            )}
-            {activeTire.installedDate && (
-              <p className="text-xs text-muted-foreground">
-                Montate dal {new Date(activeTire.installedDate).toLocaleDateString("it-IT")}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Riepilogo costi per tipo */}
       {costSummary.total > 0 && (
