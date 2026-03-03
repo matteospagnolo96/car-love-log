@@ -22,16 +22,24 @@ export type VehicleType = "auto" | "moto";
 
 export type TireType = "estive" | "invernali" | "4stagioni";
 
+export interface MountEvent {
+  mountedAt: number; // car km when mounted
+  mountedDate: string;
+  unmountedAt?: number; // car km when unmounted
+  unmountedDate?: string;
+}
+
 export interface TireSet {
   id: string;
   label: string;
   type: TireType;
   brand?: string;
   model?: string;
-  installedAt?: number; // km when installed
+  installedAt?: number; // car km when last mounted
   installedDate?: string;
-  totalKm: number; // total km driven on these tires
+  totalKm: number; // legacy/manual km
   active: boolean; // currently mounted
+  mountHistory: MountEvent[]; // all mount/unmount periods
 }
 
 export interface Reminder {
@@ -263,16 +271,26 @@ export function useCarData() {
   const switchTires = (tireId: string) => {
     if (!activeVehicle) return;
     const currentKm = activeVehicle.currentKm;
+    const now = new Date().toISOString().slice(0, 10);
     updateVehicle(activeVehicle.id, (v) => ({
       ...v,
       tireSets: (v.tireSets || []).map((t) => {
         if (t.active) {
-          // Deactivate current: accumulate km
-          const driven = currentKm - (t.installedAt || 0);
-          return { ...t, active: false, totalKm: t.totalKm + Math.max(0, driven) };
+          // Deactivate current: close mount period
+          const history = [...(t.mountHistory || [])];
+          if (history.length > 0 && !history[history.length - 1].unmountedAt) {
+            history[history.length - 1] = {
+              ...history[history.length - 1],
+              unmountedAt: currentKm,
+              unmountedDate: now,
+            };
+          }
+          return { ...t, active: false, mountHistory: history };
         }
         if (t.id === tireId) {
-          return { ...t, active: true, installedAt: currentKm, installedDate: new Date().toISOString().slice(0, 10) };
+          // Activate new: open mount period
+          const history = [...(t.mountHistory || []), { mountedAt: currentKm, mountedDate: now }];
+          return { ...t, active: true, installedAt: currentKm, installedDate: now, mountHistory: history };
         }
         return t;
       }),

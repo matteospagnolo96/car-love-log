@@ -130,7 +130,6 @@ const Index = () => {
                 vehicleType={activeVehicle.vehicleType}
                 lastTagliando={lastOfType("tagliando")}
                 lastRevisione={lastOfType("revisione")}
-                lastGomme={lastOfType("gomme")}
                 totalMaintenances={activeVehicle.maintenanceLog.length}
                 mileageLog={activeVehicle.mileageLog}
                 maintenanceLog={activeVehicle.maintenanceLog}

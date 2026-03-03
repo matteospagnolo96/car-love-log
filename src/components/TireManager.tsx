@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check, Route } from "lucide-react";
+import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check, Route, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { TireSet, TireType } from "@/hooks/useCarData";
+import type { TireSet, TireType, MountEvent } from "@/hooks/useCarData";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -39,24 +39,27 @@ const TIRE_TYPE_COLORS: Record<TireType, string> = {
 };
 
 function getTireKm(tire: TireSet, currentKm: number): number {
-  if (tire.active && tire.installedAt != null) {
-    return tire.totalKm + Math.max(0, currentKm - tire.installedAt);
+  const history = tire.mountHistory || [];
+  let km = tire.totalKm || 0;
+  for (const event of history) {
+    const end = event.unmountedAt ?? (tire.active ? currentKm : event.mountedAt);
+    km += Math.max(0, end - event.mountedAt);
   }
-  return tire.totalKm;
+  return km;
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEdit, onSwitch }: TireManagerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [type, setType] = useState<TireType>("4stagioni");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
-
-  // Movement log form
-  const [movementTireId, setMovementTireId] = useState<string | null>(null);
-  const [movementKm, setMovementKm] = useState("");
-  const [movementDate, setMovementDate] = useState(new Date().toISOString().slice(0, 10));
 
   const activeTire = tireSets.find((t) => t.active);
 
@@ -65,15 +68,18 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
       toast.error("Inserisci un nome per le gomme");
       return;
     }
+    const isFirst = tireSets.length === 0;
+    const now = new Date().toISOString().slice(0, 10);
     onAdd({
       label: label.trim(),
       type,
       brand: brand.trim(),
       model: model.trim(),
       totalKm: 0,
-      active: tireSets.length === 0,
-      installedAt: tireSets.length === 0 ? currentKm : undefined,
-      installedDate: tireSets.length === 0 ? new Date().toISOString().slice(0, 10) : undefined,
+      active: isFirst,
+      installedAt: isFirst ? currentKm : undefined,
+      installedDate: isFirst ? now : undefined,
+      mountHistory: isFirst ? [{ mountedAt: currentKm, mountedDate: now }] : [],
     });
     setLabel("");
     setBrand("");
@@ -100,20 +106,6 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
     onEdit(editingId, { label, type, brand, model });
     setEditingId(null);
     toast.success("Gomme aggiornate!");
-  };
-
-  const handleAddMovement = (tireId: string) => {
-    if (!movementKm || Number(movementKm) <= 0) {
-      toast.error("Inserisci i km percorsi");
-      return;
-    }
-    const tire = tireSets.find((t) => t.id === tireId);
-    if (!tire) return;
-    onEdit(tireId, { totalKm: tire.totalKm + Number(movementKm) });
-    setMovementTireId(null);
-    setMovementKm("");
-    setMovementDate(new Date().toISOString().slice(0, 10));
-    toast.success("Km aggiunti!");
   };
 
   return (
@@ -177,7 +169,7 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         </div>
       )}
 
-      {/* Tire cards grid */}
+      {/* Empty state */}
       {tireSets.length === 0 && !showForm && (
         <div className="text-center py-12 text-muted-foreground">
           <CircleDot className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -186,11 +178,13 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         </div>
       )}
 
+      {/* Tire cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {tireSets.map((tire) => {
           const isEditing = editingId === tire.id;
           const km = getTireKm(tire, currentKm);
-          const isMovement = movementTireId === tire.id;
+          const isExpanded = expandedId === tire.id;
+          const history = tire.mountHistory || [];
 
           if (isEditing) {
             return (
@@ -246,6 +240,7 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
                 tire.active ? "border-primary/40" : "border-border/50"
               }`}
             >
+              {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-lg font-heading font-bold">{tire.label}</span>
@@ -307,57 +302,68 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
                 </div>
               </div>
 
+              {/* Brand info */}
               {(tire.brand || tire.model) && (
                 <p className="text-sm text-muted-foreground mb-2">{tire.brand} {tire.model}</p>
               )}
 
+              {/* Total km */}
               <p className="text-2xl font-heading font-bold mb-1">
-                {km.toLocaleString("it-IT")} <span className="text-sm font-normal text-muted-foreground">km</span>
+                {km.toLocaleString("it-IT")} <span className="text-sm font-normal text-muted-foreground">km percorsi</span>
               </p>
 
-              {tire.installedDate && tire.active && (
+              {tire.active && tire.installedDate && (
                 <p className="text-xs text-muted-foreground mb-3">
-                  Montate dal {new Date(tire.installedDate).toLocaleDateString("it-IT")}
+                  Montate dal {formatDate(tire.installedDate)}
                 </p>
               )}
 
-              {/* Movement form */}
-              {isMovement ? (
-                <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground">Aggiungi km percorsi</p>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Km"
-                      value={movementKm}
-                      onChange={(e) => setMovementKm(e.target.value)}
-                      className="bg-muted border-border flex-1"
-                    />
-                    <Input
-                      type="date"
-                      value={movementDate}
-                      onChange={(e) => setMovementDate(e.target.value)}
-                      className="bg-muted border-border w-36"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleAddMovement(tire.id)} className="gap-1">
-                      <Check className="h-3.5 w-3.5" /> Salva
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setMovementTireId(null)}>
-                      Annulla
-                    </Button>
-                  </div>
+              {/* Movement history toggle */}
+              {history.length > 0 && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : tire.id)}
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Storico movimenti ({history.length})</span>
+                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="mt-2 space-y-1.5 animate-fade-in">
+                      {[...history].reverse().map((event, i) => {
+                        const periodKm = event.unmountedAt
+                          ? event.unmountedAt - event.mountedAt
+                          : tire.active
+                          ? currentKm - event.mountedAt
+                          : 0;
+                        return (
+                          <div key={i} className="flex items-center gap-3 text-xs p-2 rounded-md bg-muted/50">
+                            <div className={`w-2 h-2 rounded-full shrink-0 ${!event.unmountedAt && tire.active ? "bg-primary" : "bg-muted-foreground/40"}`} />
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium">
+                                {formatDate(event.mountedDate)}
+                              </span>
+                              {event.unmountedDate && (
+                                <span className="text-muted-foreground"> → {formatDate(event.unmountedDate)}</span>
+                              )}
+                              {!event.unmountedAt && tire.active && (
+                                <span className="text-primary"> → in uso</span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-medium">{Math.max(0, periodKm).toLocaleString("it-IT")} km</span>
+                              <span className="text-muted-foreground ml-1">
+                                ({event.mountedAt.toLocaleString("it-IT")} → {(event.unmountedAt ?? (tire.active ? currentKm : event.mountedAt)).toLocaleString("it-IT")})
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-2 gap-2 text-xs"
-                  onClick={() => setMovementTireId(tire.id)}
-                >
-                  <Route className="h-3.5 w-3.5" /> Aggiungi km
-                </Button>
               )}
             </div>
           );
