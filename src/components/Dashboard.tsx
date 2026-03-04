@@ -34,11 +34,15 @@ function StatCard({ icon: Icon, label, value, subtitle, accent, badge }: StatCar
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
       <p className="text-2xl font-heading font-bold">{value}</p>
-      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-      {badge && (
-        <Badge variant="outline" className={badge.className + " text-[10px] mt-2"}>
-          {badge.label}
-        </Badge>
+      {subtitle && (
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          <span className="text-xs text-muted-foreground">{subtitle}</span>
+          {badge && (
+            <Badge variant="outline" className={badge.className + " text-[10px]"}>
+              {badge.label}
+            </Badge>
+          )}
+        </div>
       )}
     </div>
   );
