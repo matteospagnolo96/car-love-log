@@ -105,6 +105,15 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
     const history = [...(tire.mountHistory || [])];
 
     if (eventType === "mount") {
+      // Auto-unmount the currently active tire
+      if (activeTire && activeTire.id !== tireId) {
+        const activeHistory = [...(activeTire.mountHistory || [])];
+        const lastOpen = activeHistory.findIndex((e) => !e.unmountedAt);
+        if (lastOpen !== -1) {
+          activeHistory[lastOpen] = { ...activeHistory[lastOpen], unmountedAt: kmVal, unmountedDate: eventDate };
+        }
+        onEdit(activeTire.id, { mountHistory: activeHistory, active: false });
+      }
       // Open a new mount period
       history.push({ mountedAt: kmVal, mountedDate: eventDate });
       onEdit(tireId, { mountHistory: history, active: true, installedAt: kmVal, installedDate: eventDate });
