@@ -32,14 +32,14 @@ function StatCard({ icon: Icon, label, value, subtitle, accent, badge }: StatCar
           <Icon className="h-5 w-5" />
         </div>
         <span className="text-sm text-muted-foreground">{label}</span>
-        {badge && (
-          <Badge variant="outline" className={badge.className + " text-[10px] ml-auto"}>
-            {badge.label}
-          </Badge>
-        )}
       </div>
       <p className="text-2xl font-heading font-bold">{value}</p>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      {badge && (
+        <Badge variant="outline" className={badge.className + " text-[10px] mt-2"}>
+          {badge.label}
+        </Badge>
+      )}
     </div>
   );
 }
