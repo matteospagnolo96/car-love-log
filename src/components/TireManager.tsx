@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check, Calendar, Route } from "lucide-react";
+import { CircleDot, Plus, Trash2, ArrowRightLeft, Pencil, X, Check, Calendar, Route, RotateCcw, Archive, ArchiveRestore, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { TireSet, TireType, MountEvent } from "@/hooks/useCarData";
+import type { TireSet, TireType, MountEvent, RotationEvent } from "@/hooks/useCarData";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -49,6 +49,13 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
   const [eventType, setEventType] = useState<"mount" | "unmount">("mount");
   const [eventKm, setEventKm] = useState("");
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showArchived, setShowArchived] = useState(false);
+
+  // Rotation form state
+  const [rotationTireId, setRotationTireId] = useState<string | null>(null);
+  const [rotationKm, setRotationKm] = useState("");
+  const [rotationDate, setRotationDate] = useState(new Date().toISOString().slice(0, 10));
+  const [rotationNote, setRotationNote] = useState("");
 
   // New tire form
   const [label, setLabel] = useState("");
@@ -59,7 +66,9 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
   const [firstInstallDate, setFirstInstallDate] = useState(new Date().toISOString().slice(0, 10));
   const [mountOnCreate, setMountOnCreate] = useState(true);
 
-  const activeTire = tireSets.find((t) => t.active);
+  const activeTire = tireSets.find((t) => t.active && !t.archived);
+  const activeSets = tireSets.filter((t) => !t.archived);
+  const archivedSets = tireSets.filter((t) => t.archived);
 
   const handleAdd = () => {
     if (!label.trim()) { toast.error("Inserisci un nome"); return; }
@@ -73,10 +82,10 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
 
     onAdd({
       label: label.trim(), type, brand: brand.trim(), model: model.trim(),
-      totalKm: 0, active: shouldMount,
+      totalKm: 0, active: shouldMount, archived: false,
       installedAt: shouldMount ? installKm : undefined,
       installedDate: shouldMount ? firstInstallDate : undefined,
-      mountHistory: history,
+      mountHistory: history, rotationHistory: [],
     });
     setLabel(""); setBrand(""); setModel(""); setFirstInstallKm(""); setShowForm(false); setMountOnCreate(true);
     toast.success("Gomme aggiunte!");
@@ -105,7 +114,6 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
     const history = [...(tire.mountHistory || [])];
 
     if (eventType === "mount") {
-      // Auto-unmount the currently active tire
       if (activeTire && activeTire.id !== tireId) {
         const activeHistory = [...(activeTire.mountHistory || [])];
         const lastOpen = activeHistory.findIndex((e) => !e.unmountedAt);
@@ -114,12 +122,10 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         }
         onEdit(activeTire.id, { mountHistory: activeHistory, active: false });
       }
-      // Open a new mount period
       history.push({ mountedAt: kmVal, mountedDate: eventDate });
       onEdit(tireId, { mountHistory: history, active: true, installedAt: kmVal, installedDate: eventDate });
       toast.success("Montaggio registrato!");
     } else {
-      // Close the last open mount period
       const lastOpen = history.findIndex((e) => !e.unmountedAt);
       if (lastOpen === -1) { toast.error("Nessun periodo di montaggio aperto"); return; }
       history[lastOpen] = { ...history[lastOpen], unmountedAt: kmVal, unmountedDate: eventDate };
@@ -131,10 +137,286 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
   };
 
   const openAddEvent = (tireId: string, type: "mount" | "unmount") => {
-    setAddEventTireId(tireId);
-    setEventType(type);
-    setEventKm("");
-    setEventDate(new Date().toISOString().slice(0, 10));
+    setAddEventTireId(tireId); setEventType(type);
+    setEventKm(""); setEventDate(new Date().toISOString().slice(0, 10));
+    setRotationTireId(null);
+  };
+
+  const handleArchive = (tireId: string) => {
+    const tire = tireSets.find((t) => t.id === tireId);
+    if (!tire) return;
+    // If active, unmount first
+    if (tire.active) {
+      const history = [...(tire.mountHistory || [])];
+      const lastOpen = history.findIndex((e) => !e.unmountedAt);
+      if (lastOpen !== -1) {
+        const now = new Date().toISOString().slice(0, 10);
+        history[lastOpen] = { ...history[lastOpen], unmountedAt: currentKm, unmountedDate: now };
+      }
+      onEdit(tireId, { archived: true, active: false, mountHistory: history });
+    } else {
+      onEdit(tireId, { archived: true });
+    }
+    toast.success("Gomme archiviate!");
+  };
+
+  const handleUnarchive = (tireId: string) => {
+    onEdit(tireId, { archived: false });
+    toast.success("Gomme ripristinate!");
+  };
+
+  const openRotation = (tireId: string) => {
+    setRotationTireId(tireId);
+    setRotationKm(String(currentKm));
+    setRotationDate(new Date().toISOString().slice(0, 10));
+    setRotationNote("");
+    setAddEventTireId(null);
+  };
+
+  const handleAddRotation = (tireId: string) => {
+    const kmVal = Number(rotationKm);
+    if (!rotationKm || kmVal < 0) { toast.error("Inserisci i km"); return; }
+    if (!rotationDate) { toast.error("Inserisci la data"); return; }
+
+    const tire = tireSets.find((t) => t.id === tireId);
+    if (!tire) return;
+
+    const newRotation: RotationEvent = { date: rotationDate, km: kmVal, note: rotationNote.trim() || undefined };
+    const rotationHistory = [...(tire.rotationHistory || []), newRotation];
+    onEdit(tireId, { rotationHistory });
+    setRotationTireId(null);
+    toast.success("Inversione registrata!");
+  };
+
+  const renderTireCard = (tire: TireSet, isArchived = false) => {
+    const isEditing = editingId === tire.id;
+    const km = getTireKm(tire, currentKm);
+    const isExpanded = expandedId === tire.id;
+    const isAddingEvent = addEventTireId === tire.id;
+    const isAddingRotation = rotationTireId === tire.id;
+    const history = tire.mountHistory || [];
+    const rotations = tire.rotationHistory || [];
+
+    if (isEditing) {
+      return (
+        <div key={tire.id} className="sm:col-span-2 rounded-lg bg-card p-4 border border-primary/30 space-y-3 animate-fade-in">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1"><label className="text-xs text-muted-foreground">Nome</label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
+            <div className="space-y-1"><label className="text-xs text-muted-foreground">Tipo</label>
+              <div className="flex gap-1">{(["estive", "invernali", "4stagioni"] as TireType[]).map((t) => (
+                <button key={t} onClick={() => setType(t)} className={`flex-1 text-[10px] py-1.5 rounded-md border ${type === t ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"}`}>{TIRE_TYPE_LABELS[t]}</button>
+              ))}</div></div>
+            <div className="space-y-1"><label className="text-xs text-muted-foreground">Marca</label>
+              <Input value={brand} onChange={(e) => setBrand(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
+            <div className="space-y-1"><label className="text-xs text-muted-foreground">Modello</label>
+              <Input value={model} onChange={(e) => setModel(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={saveEdit} className="gap-1 h-7 text-xs"><Check className="h-3 w-3" /> Salva</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7 text-xs"><X className="h-3 w-3" /> Annulla</Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={tire.id} className={`rounded-lg bg-card p-4 animate-fade-in border hover:border-primary/30 transition-colors ${isArchived ? "opacity-60 border-border/30" : tire.active ? "border-primary/40" : "border-border/50"}`}>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-1 mb-2">
+          <Badge variant="outline" className={TIRE_TYPE_COLORS[tire.type] + " text-[10px] px-1.5 py-0"}>
+            {TIRE_TYPE_LABELS[tire.type]}
+          </Badge>
+          <div className="flex gap-1">
+            {tire.active && (
+              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] px-1.5 py-0">Montate</Badge>
+            )}
+            {isArchived && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">Archiviate</Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Name */}
+        <p className="text-sm font-heading font-bold truncate">{tire.label}</p>
+        {(tire.brand || tire.model) && (
+          <p className="text-[11px] text-muted-foreground truncate">{tire.brand} {tire.model}</p>
+        )}
+
+        {/* KM effettivi */}
+        <p className="text-xl font-heading font-bold mt-2">
+          {km.toLocaleString("it-IT")} <span className="text-xs font-normal text-muted-foreground">km gomme</span>
+        </p>
+        {tire.active && tire.installedDate && (
+          <p className="text-[10px] text-muted-foreground">montate dal {formatDate(tire.installedDate)} a {(tire.installedAt ?? 0).toLocaleString("it-IT")} km</p>
+        )}
+        {/* Rotation count */}
+        {rotations.length > 0 && (
+          <p className="text-[10px] text-muted-foreground">
+            🔄 {rotations.length} {rotations.length === 1 ? "inversione" : "inversioni"}
+          </p>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1 mt-3 border-t border-border/50 pt-2 flex-wrap">
+          {!isArchived && (
+            <>
+              {/* Mount / Unmount */}
+              {tire.active ? (
+                <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1"
+                  onClick={() => openAddEvent(tire.id, "unmount")}>
+                  <ArrowRightLeft className="h-3 w-3" /> Smonta
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1"
+                  onClick={() => openAddEvent(tire.id, "mount")}>
+                  <ArrowRightLeft className="h-3 w-3" /> Monta
+                </Button>
+              )}
+              {/* Rotation */}
+              {tire.active && (
+                <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1"
+                  onClick={() => openRotation(tire.id)}>
+                  <RefreshCw className="h-3 w-3" /> Inverti
+                </Button>
+              )}
+            </>
+          )}
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(tire)} title="Modifica">
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setExpandedId(isExpanded ? null : tire.id)} title="Storico">
+            <Calendar className="h-3 w-3" />
+          </Button>
+          {/* Archive / Unarchive */}
+          {isArchived ? (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => handleUnarchive(tire.id)} title="Ripristina">
+              <ArchiveRestore className="h-3 w-3" />
+            </Button>
+          ) : (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent-foreground" onClick={() => handleArchive(tire.id)} title="Archivia">
+              <Archive className="h-3 w-3" />
+            </Button>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive ml-auto"><Trash2 className="h-3 w-3" /></Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminare {tire.label}?</AlertDialogTitle>
+                <AlertDialogDescription>Questo set verrà rimosso permanentemente.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(tire.id)}>Elimina</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        {/* Mount/Unmount event form */}
+        {isAddingEvent && (
+          <div className="mt-2 pt-2 border-t border-border/50 space-y-2 animate-fade-in">
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              {eventType === "mount" ? "📥 Registra montaggio" : "📤 Registra smontaggio"}
+            </p>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Km macchina al momento</label>
+              <Input type="number" placeholder={`es. ${currentKm}`} value={eventKm}
+                onChange={(e) => setEventKm(e.target.value)} className="bg-muted border-border h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Data</label>
+              <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)}
+                className="bg-muted border-border h-8 text-sm" />
+            </div>
+            <div className="flex gap-1">
+              <Button size="sm" onClick={() => handleAddEvent(tire.id)} className="gap-1 h-7 text-xs flex-1">
+                <Check className="h-3 w-3" /> {eventType === "mount" ? "Monta" : "Smonta"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setAddEventTireId(null)} className="h-7 text-xs">✕</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Rotation form */}
+        {isAddingRotation && (
+          <div className="mt-2 pt-2 border-t border-border/50 space-y-2 animate-fade-in">
+            <p className="text-[11px] font-semibold text-muted-foreground">🔄 Registra inversione gomme</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-muted-foreground">Km macchina</label>
+                <Input type="number" value={rotationKm} onChange={(e) => setRotationKm(e.target.value)}
+                  className="bg-muted border-border h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-muted-foreground">Data</label>
+                <Input type="date" value={rotationDate} onChange={(e) => setRotationDate(e.target.value)}
+                  className="bg-muted border-border h-8 text-sm" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Note (opzionale)</label>
+              <Input value={rotationNote} onChange={(e) => setRotationNote(e.target.value)} placeholder="es. Ant. ↔ Post."
+                className="bg-muted border-border h-8 text-sm" />
+            </div>
+            <div className="flex gap-1">
+              <Button size="sm" onClick={() => handleAddRotation(tire.id)} className="gap-1 h-7 text-xs flex-1">
+                <Check className="h-3 w-3" /> Registra
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setRotationTireId(null)} className="h-7 text-xs">✕</Button>
+            </div>
+          </div>
+        )}
+
+        {/* History */}
+        {isExpanded && (
+          <div className="mt-2 pt-2 border-t border-border/50 space-y-1 animate-fade-in">
+            <p className="text-[11px] font-semibold text-muted-foreground mb-1">Storico movimenti</p>
+            {history.length === 0 && (
+              <p className="text-[11px] text-muted-foreground italic">Nessun movimento registrato</p>
+            )}
+            {[...history].reverse().map((event, i) => {
+              const periodKm = event.unmountedAt != null
+                ? event.unmountedAt - event.mountedAt
+                : tire.active ? currentKm - event.mountedAt : 0;
+              return (
+                <div key={i} className="text-[11px] p-1.5 rounded bg-muted/50 flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${!event.unmountedAt && tire.active ? "bg-primary" : "bg-muted-foreground/40"}`} />
+                  <div className="flex-1 min-w-0">
+                    <span>📥 {formatDate(event.mountedDate)} ({event.mountedAt.toLocaleString("it-IT")} km)</span>
+                    {event.unmountedDate ? (
+                      <span className="text-muted-foreground"> → 📤 {formatDate(event.unmountedDate)} ({event.unmountedAt!.toLocaleString("it-IT")} km)</span>
+                    ) : tire.active && (
+                      <span className="text-primary"> → in uso</span>
+                    )}
+                  </div>
+                  <span className="font-medium shrink-0">{Math.max(0, periodKm).toLocaleString("it-IT")} km</span>
+                </div>
+              );
+            })}
+            <div className="text-[11px] font-semibold text-right pt-1 border-t border-border/30">
+              Totale: {km.toLocaleString("it-IT")} km
+            </div>
+
+            {/* Rotation history */}
+            {rotations.length > 0 && (
+              <>
+                <p className="text-[11px] font-semibold text-muted-foreground mt-2 mb-1">🔄 Inversioni</p>
+                {[...rotations].reverse().map((rot, i) => (
+                  <div key={i} className="text-[11px] p-1.5 rounded bg-muted/50 flex items-center gap-2">
+                    <RefreshCw className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span>{formatDate(rot.date)} • {rot.km.toLocaleString("it-IT")} km</span>
+                    {rot.note && <span className="text-muted-foreground">— {rot.note}</span>}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -220,162 +502,31 @@ export default function TireManager({ tireSets, currentKm, onAdd, onDelete, onEd
         </div>
       )}
 
-      {/* Cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {tireSets.map((tire) => {
-          const isEditing = editingId === tire.id;
-          const km = getTireKm(tire, currentKm);
-          const isExpanded = expandedId === tire.id;
-          const isAddingEvent = addEventTireId === tire.id;
-          const history = tire.mountHistory || [];
-          const hasOpenPeriod = history.some((e) => !e.unmountedAt);
+      {/* Active cards grid */}
+      {activeSets.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeSets.map((tire) => renderTireCard(tire, false))}
+        </div>
+      )}
 
-          if (isEditing) {
-            return (
-              <div key={tire.id} className="sm:col-span-2 rounded-lg bg-card p-4 border border-primary/30 space-y-3 animate-fade-in">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1"><label className="text-xs text-muted-foreground">Nome</label>
-                    <Input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
-                  <div className="space-y-1"><label className="text-xs text-muted-foreground">Tipo</label>
-                    <div className="flex gap-1">{(["estive", "invernali", "4stagioni"] as TireType[]).map((t) => (
-                      <button key={t} onClick={() => setType(t)} className={`flex-1 text-[10px] py-1.5 rounded-md border ${type === t ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"}`}>{TIRE_TYPE_LABELS[t]}</button>
-                    ))}</div></div>
-                  <div className="space-y-1"><label className="text-xs text-muted-foreground">Marca</label>
-                    <Input value={brand} onChange={(e) => setBrand(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
-                  <div className="space-y-1"><label className="text-xs text-muted-foreground">Modello</label>
-                    <Input value={model} onChange={(e) => setModel(e.target.value)} className="bg-muted border-border h-8 text-sm" /></div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={saveEdit} className="gap-1 h-7 text-xs"><Check className="h-3 w-3" /> Salva</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7 text-xs"><X className="h-3 w-3" /> Annulla</Button>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={tire.id} className={`rounded-lg bg-card p-4 animate-fade-in border hover:border-primary/30 transition-colors ${tire.active ? "border-primary/40" : "border-border/50"}`}>
-              {/* Header */}
-              <div className="flex items-center justify-between gap-1 mb-2">
-                <Badge variant="outline" className={TIRE_TYPE_COLORS[tire.type] + " text-[10px] px-1.5 py-0"}>
-                  {TIRE_TYPE_LABELS[tire.type]}
-                </Badge>
-                {tire.active && (
-                  <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] px-1.5 py-0">Montate</Badge>
-                )}
-              </div>
-
-              {/* Name */}
-              <p className="text-sm font-heading font-bold truncate">{tire.label}</p>
-              {(tire.brand || tire.model) && (
-                <p className="text-[11px] text-muted-foreground truncate">{tire.brand} {tire.model}</p>
-              )}
-
-              {/* KM effettivi */}
-              <p className="text-xl font-heading font-bold mt-2">
-                {km.toLocaleString("it-IT")} <span className="text-xs font-normal text-muted-foreground">km gomme</span>
-              </p>
-              {tire.active && tire.installedDate && (
-                <p className="text-[10px] text-muted-foreground">montate dal {formatDate(tire.installedDate)} a {(tire.installedAt ?? 0).toLocaleString("it-IT")} km</p>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-1 mt-3 border-t border-border/50 pt-2 flex-wrap">
-                {/* Mount / Unmount */}
-                {tire.active ? (
-                  <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1"
-                    onClick={() => openAddEvent(tire.id, "unmount")}>
-                    <ArrowRightLeft className="h-3 w-3" /> Smonta
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1"
-                    onClick={() => openAddEvent(tire.id, "mount")}>
-                    <ArrowRightLeft className="h-3 w-3" /> Monta
-                  </Button>
-                )}
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(tire)} title="Modifica">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setExpandedId(isExpanded ? null : tire.id)} title="Storico">
-                  <Calendar className="h-3 w-3" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive ml-auto"><Trash2 className="h-3 w-3" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Eliminare {tire.label}?</AlertDialogTitle>
-                      <AlertDialogDescription>Questo set verrà rimosso permanentemente.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annulla</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(tire.id)}>Elimina</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-
-              {/* Mount/Unmount event form */}
-              {isAddingEvent && (
-                <div className="mt-2 pt-2 border-t border-border/50 space-y-2 animate-fade-in">
-                  <p className="text-[11px] font-semibold text-muted-foreground">
-                    {eventType === "mount" ? "📥 Registra montaggio" : "📤 Registra smontaggio"}
-                  </p>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">Km macchina al momento</label>
-                    <Input type="number" placeholder={`es. ${currentKm}`} value={eventKm}
-                      onChange={(e) => setEventKm(e.target.value)} className="bg-muted border-border h-8 text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">Data</label>
-                    <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)}
-                      className="bg-muted border-border h-8 text-sm" />
-                  </div>
-                  <div className="flex gap-1">
-                    <Button size="sm" onClick={() => handleAddEvent(tire.id)} className="gap-1 h-7 text-xs flex-1">
-                      <Check className="h-3 w-3" /> {eventType === "mount" ? "Monta" : "Smonta"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setAddEventTireId(null)} className="h-7 text-xs">✕</Button>
-                  </div>
-                </div>
-              )}
-
-              {/* History */}
-              {isExpanded && (
-                <div className="mt-2 pt-2 border-t border-border/50 space-y-1 animate-fade-in">
-                  <p className="text-[11px] font-semibold text-muted-foreground mb-1">Storico movimenti</p>
-                  {history.length === 0 && (
-                    <p className="text-[11px] text-muted-foreground italic">Nessun movimento registrato</p>
-                  )}
-                  {[...history].reverse().map((event, i) => {
-                    const periodKm = event.unmountedAt != null
-                      ? event.unmountedAt - event.mountedAt
-                      : tire.active ? currentKm - event.mountedAt : 0;
-                    return (
-                      <div key={i} className="text-[11px] p-1.5 rounded bg-muted/50 flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${!event.unmountedAt && tire.active ? "bg-primary" : "bg-muted-foreground/40"}`} />
-                        <div className="flex-1 min-w-0">
-                          <span>📥 {formatDate(event.mountedDate)} ({event.mountedAt.toLocaleString("it-IT")} km)</span>
-                          {event.unmountedDate ? (
-                            <span className="text-muted-foreground"> → 📤 {formatDate(event.unmountedDate)} ({event.unmountedAt!.toLocaleString("it-IT")} km)</span>
-                          ) : tire.active && (
-                            <span className="text-primary"> → in uso</span>
-                          )}
-                        </div>
-                        <span className="font-medium shrink-0">{Math.max(0, periodKm).toLocaleString("it-IT")} km</span>
-                      </div>
-                    );
-                  })}
-                  <div className="text-[11px] font-semibold text-right pt-1 border-t border-border/30">
-                    Totale: {km.toLocaleString("it-IT")} km
-                  </div>
-                </div>
-              )}
+      {/* Archived section */}
+      {archivedSets.length > 0 && (
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Archive className="h-4 w-4" />
+            <span>Archivio ({archivedSets.length})</span>
+            <span className="text-xs">{showArchived ? "▲" : "▼"}</span>
+          </button>
+          {showArchived && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {archivedSets.map((tire) => renderTireCard(tire, true))}
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

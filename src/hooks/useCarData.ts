@@ -29,6 +29,12 @@ export interface MountEvent {
   unmountedDate?: string;
 }
 
+export interface RotationEvent {
+  date: string;
+  km: number;
+  note?: string;
+}
+
 export interface TireSet {
   id: string;
   label: string;
@@ -39,7 +45,9 @@ export interface TireSet {
   installedDate?: string;
   totalKm: number; // legacy/manual km
   active: boolean; // currently mounted
+  archived?: boolean; // no longer in use
   mountHistory: MountEvent[]; // all mount/unmount periods
+  rotationHistory?: RotationEvent[]; // tire rotation events
 }
 
 export interface Reminder {
