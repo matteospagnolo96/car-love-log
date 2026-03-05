@@ -9,7 +9,7 @@ export interface MileageEntry {
 
 export interface MaintenanceEntry {
   id: string;
-  type: "tagliando" | "revisione" | "gomme" | "altro";
+  type: "tagliando" | "revisione" | "ordinaria" | "riparazioni" | "gomme" | "altro";
   date: string;
   km: number;
   description: string;
