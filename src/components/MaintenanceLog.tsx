@@ -9,6 +9,8 @@ import { toast } from "sonner";
 const TYPE_CONFIG = {
   tagliando: { label: "Tagliando", icon: Wrench, color: "text-primary" },
   revisione: { label: "Revisione", icon: FileCheck, color: "text-info" },
+  ordinaria: { label: "Manutenzione ordinaria", icon: Settings, color: "text-accent-foreground" },
+  riparazioni: { label: "Riparazioni", icon: Wrench, color: "text-destructive" },
   altro: { label: "Altro", icon: Settings, color: "text-muted-foreground" },
 } as const;
 
@@ -92,7 +94,9 @@ export default function MaintenanceLog({ entries, onAdd, onDelete, onEdit }: Mai
             <SelectContent>
               <SelectItem value="tagliando">🔧 Tagliando</SelectItem>
               <SelectItem value="revisione">📋 Revisione</SelectItem>
-              <SelectItem value="altro">⚙️ Altro</SelectItem>
+              <SelectItem value="ordinaria">⚙️ Manutenzione ordinaria</SelectItem>
+              <SelectItem value="riparazioni">🛠️ Riparazioni</SelectItem>
+              <SelectItem value="altro">🔩 Altro</SelectItem>
             </SelectContent>
           </Select>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-muted border-border" />
