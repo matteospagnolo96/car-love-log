@@ -95,7 +95,7 @@ const Index = () => {
       {activeVehicle ? (
         <>
           {/* Floating Bottom Tab Bar */}
-          <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-2xl shadow-lg px-2 py-1.5 flex gap-1">
+          <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-xl shadow-lg px-1.5 py-1 flex gap-0.5">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -103,13 +103,13 @@ const Index = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-xs font-medium transition-all ${
+                  className={`flex flex-col items-center gap-0 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
                     isActive
                       ? "bg-primary/15 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? "scale-110" : ""} transition-transform`} />
+                  <Icon className={`h-4 w-4 ${isActive ? "scale-110" : ""} transition-transform`} />
                   <span>{tab.label}</span>
                 </button>
               );
