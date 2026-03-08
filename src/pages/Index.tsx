@@ -134,7 +134,7 @@ const Index = () => {
           </nav>
 
           {/* Content */}
-          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
+          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24" {...swipeHandlers}>
             <div key={activeTab} className="animate-fade-in">
               {activeTab === "dashboard" && (
                 <Dashboard
