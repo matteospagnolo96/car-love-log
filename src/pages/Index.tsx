@@ -117,7 +117,7 @@ const Index = () => {
           </nav>
 
           {/* Content */}
-          <main className="container max-w-5xl mx-auto px-4 py-8">
+          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
             {activeTab === "dashboard" && (
               <Dashboard
                 currentKm={activeVehicle.currentKm}
