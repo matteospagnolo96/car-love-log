@@ -156,6 +156,7 @@ const Index = () => {
                 />
               )}
             </div>
+          </main>
         </>
       ) : (
         <main className="container max-w-5xl mx-auto px-4 py-16 text-center space-y-4">
