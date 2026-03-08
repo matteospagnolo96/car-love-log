@@ -94,32 +94,30 @@ const Index = () => {
 
       {activeVehicle ? (
         <>
-          {/* Tab Navigation */}
-          <nav className="border-b border-border/50 bg-card/30">
-            <div className="container max-w-5xl mx-auto px-4 flex justify-around sm:justify-start sm:gap-1">
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Floating Bottom Tab Bar */}
+          <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-2xl shadow-lg px-2 py-1.5 flex gap-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-xs font-medium transition-all ${
+                    isActive
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? "scale-110" : ""} transition-transform`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
           {/* Content */}
-          <main className="container max-w-5xl mx-auto px-4 py-8">
+          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
             {activeTab === "dashboard" && (
               <Dashboard
                 currentKm={activeVehicle.currentKm}
