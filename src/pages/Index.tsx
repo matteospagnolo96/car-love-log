@@ -25,6 +25,7 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+const TAB_IDS = TABS.map((t) => t.id);
 
 const Index = () => {
   const {
