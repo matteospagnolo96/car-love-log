@@ -51,6 +51,22 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const tabIds = TABS.map((t) => t.id);
+  const goNext = useCallback(() => {
+    setActiveTab((prev) => {
+      const i = tabIds.indexOf(prev);
+      return tabIds[Math.min(i + 1, tabIds.length - 1)];
+    });
+  }, [tabIds]);
+  const goPrev = useCallback(() => {
+    setActiveTab((prev) => {
+      const i = tabIds.indexOf(prev);
+      return tabIds[Math.max(i - 1, 0)];
+    });
+  }, [tabIds]);
+
+  const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
+
   const lastOfType = (type: string) => {
     if (!activeVehicle) return undefined;
     const sorted = activeVehicle.maintenanceLog
