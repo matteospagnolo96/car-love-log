@@ -95,7 +95,7 @@ const Index = () => {
       {activeVehicle ? (
         <>
           {/* Floating Bottom Tab Bar */}
-          <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-xl shadow-lg px-1.5 py-1 flex gap-0.5">
+          <nav className="fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-2xl shadow-lg px-2 py-1.5 flex justify-around max-w-md mx-auto">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
