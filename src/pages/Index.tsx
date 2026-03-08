@@ -118,43 +118,44 @@ const Index = () => {
 
           {/* Content */}
           <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
-            {activeTab === "dashboard" && (
-              <Dashboard
-                currentKm={activeVehicle.currentKm}
-                brand={activeVehicle.brand}
-                model={activeVehicle.model}
-                year={activeVehicle.year}
-                plate={activeVehicle.plate}
-                vehicleType={activeVehicle.vehicleType}
-                lastTagliando={lastOfType("tagliando")}
-                lastRevisione={lastOfType("revisione")}
-                totalMaintenances={activeVehicle.maintenanceLog.length}
-                mileageLog={activeVehicle.mileageLog}
-                maintenanceLog={activeVehicle.maintenanceLog}
-                reminders={activeVehicle.reminders || []}
-                tireSets={activeVehicle.tireSets || []}
-                onAddReminder={addReminder}
-                onDeleteReminder={deleteReminder}
-                onEditReminder={editReminder}
-              />
-            )}
-            {activeTab === "km" && (
-              <MileageTracker entries={activeVehicle.mileageLog} onAdd={addMileage} onDelete={deleteMileage} onEdit={editMileage} />
-            )}
-            {activeTab === "manutenzione" && (
-              <MaintenanceLog entries={activeVehicle.maintenanceLog} onAdd={addMaintenance} onDelete={deleteMaintenance} onEdit={editMaintenance} />
-            )}
-            {activeTab === "gomme" && (
-              <TireManager
-                tireSets={activeVehicle.tireSets || []}
-                currentKm={activeVehicle.currentKm}
-                onAdd={addTireSet}
-                onDelete={deleteTireSet}
-                onEdit={editTireSet}
-                onSwitch={switchTires}
-              />
-            )}
-          </main>
+            <div key={activeTab} className="animate-fade-in">
+              {activeTab === "dashboard" && (
+                <Dashboard
+                  currentKm={activeVehicle.currentKm}
+                  brand={activeVehicle.brand}
+                  model={activeVehicle.model}
+                  year={activeVehicle.year}
+                  plate={activeVehicle.plate}
+                  vehicleType={activeVehicle.vehicleType}
+                  lastTagliando={lastOfType("tagliando")}
+                  lastRevisione={lastOfType("revisione")}
+                  totalMaintenances={activeVehicle.maintenanceLog.length}
+                  mileageLog={activeVehicle.mileageLog}
+                  maintenanceLog={activeVehicle.maintenanceLog}
+                  reminders={activeVehicle.reminders || []}
+                  tireSets={activeVehicle.tireSets || []}
+                  onAddReminder={addReminder}
+                  onDeleteReminder={deleteReminder}
+                  onEditReminder={editReminder}
+                />
+              )}
+              {activeTab === "km" && (
+                <MileageTracker entries={activeVehicle.mileageLog} onAdd={addMileage} onDelete={deleteMileage} onEdit={editMileage} />
+              )}
+              {activeTab === "manutenzione" && (
+                <MaintenanceLog entries={activeVehicle.maintenanceLog} onAdd={addMaintenance} onDelete={deleteMaintenance} onEdit={editMaintenance} />
+              )}
+              {activeTab === "gomme" && (
+                <TireManager
+                  tireSets={activeVehicle.tireSets || []}
+                  currentKm={activeVehicle.currentKm}
+                  onAdd={addTireSet}
+                  onDelete={deleteTireSet}
+                  onEdit={editTireSet}
+                  onSwitch={switchTires}
+                />
+              )}
+            </div>
         </>
       ) : (
         <main className="container max-w-5xl mx-auto px-4 py-16 text-center space-y-4">
