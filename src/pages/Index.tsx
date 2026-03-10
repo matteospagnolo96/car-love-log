@@ -1,5 +1,4 @@
-import { useState, useCallback } from "react";
-import { useSwipe } from "@/hooks/useSwipe";
+import { useState } from "react";
 import { useCarData } from "@/hooks/useCarData";
 import Dashboard from "@/components/Dashboard";
 import MileageTracker from "@/components/MileageTracker";
@@ -50,22 +49,6 @@ const Index = () => {
   } = useCarData();
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const tabIds = TABS.map((t) => t.id);
-  const goNext = useCallback(() => {
-    setActiveTab((prev) => {
-      const i = tabIds.indexOf(prev);
-      return tabIds[Math.min(i + 1, tabIds.length - 1)];
-    });
-  }, [tabIds]);
-  const goPrev = useCallback(() => {
-    setActiveTab((prev) => {
-      const i = tabIds.indexOf(prev);
-      return tabIds[Math.max(i - 1, 0)];
-    });
-  }, [tabIds]);
-
-  const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
 
   const lastOfType = (type: string) => {
     if (!activeVehicle) return undefined;
@@ -134,7 +117,7 @@ const Index = () => {
           </nav>
 
           {/* Content */}
-          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24" {...swipeHandlers}>
+          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
             <div key={activeTab} className="animate-fade-in">
               {activeTab === "dashboard" && (
                 <Dashboard
