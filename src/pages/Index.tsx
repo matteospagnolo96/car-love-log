@@ -50,6 +50,33 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Swipe support
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+
+    const currentIndex = TABS.findIndex((t) => t.id === activeTab);
+    if (dx < 0 && currentIndex < TABS.length - 1) {
+      setActiveTab(TABS[currentIndex + 1].id);
+    } else if (dx > 0 && currentIndex > 0) {
+      setActiveTab(TABS[currentIndex - 1].id);
+    }
+  }, [activeTab]);
+
   const lastOfType = (type: string) => {
     if (!activeVehicle) return undefined;
     const sorted = activeVehicle.maintenanceLog
