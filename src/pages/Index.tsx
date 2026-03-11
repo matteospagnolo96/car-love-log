@@ -120,9 +120,9 @@ const Index = () => {
       </header>
 
       {activeVehicle ? (
-        <>
+        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="min-h-[calc(100vh-57px)]">
           {/* Floating Bottom Tab Bar */}
-          <nav className="fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-2xl shadow-lg px-2 py-1.5 flex justify-around max-w-md mx-auto">
+          <nav className="fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-lg border border-border/50 rounded-2xl shadow-lg px-2 py-1.5 flex justify-around max-w-md mx-auto touch-none">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -144,7 +144,7 @@ const Index = () => {
           </nav>
 
           {/* Content */}
-          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+          <main className="container max-w-5xl mx-auto px-4 py-8 pb-24">
             <div key={activeTab} className="animate-fade-in">
               {activeTab === "dashboard" && (
                 <Dashboard
