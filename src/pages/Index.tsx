@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useCarData } from "@/hooks/useCarData";
 import Dashboard from "@/components/Dashboard";
 import MileageTracker from "@/components/MileageTracker";
