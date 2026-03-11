@@ -184,7 +184,7 @@ const Index = () => {
               )}
             </div>
           </main>
-        </>
+        </div>
       ) : (
         <main className="container max-w-5xl mx-auto px-4 py-16 text-center space-y-4">
           <h2 className="text-2xl font-heading font-bold">Benvenuto in AutoTracker</h2>
