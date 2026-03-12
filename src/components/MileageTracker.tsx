@@ -120,10 +120,12 @@ export default function MileageTracker({ entries, onAdd, onDelete, onEdit }: Mil
               </>
             ) : (
               <>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground w-24">{entry.date}</span>
-                  <span className="font-heading font-semibold text-lg">{entry.km.toLocaleString("it-IT")} km</span>
-                  {entry.note && <span className="text-sm text-muted-foreground">— {entry.note}</span>}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <span className="text-sm text-muted-foreground w-24 shrink-0">{entry.date}</span>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="font-heading font-semibold text-lg">{entry.km.toLocaleString("it-IT")} km</span>
+                    {entry.note && <span className="text-sm text-muted-foreground truncate">{entry.note}</span>}
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" onClick={() => startEdit(entry)} className="text-muted-foreground hover:text-primary">
