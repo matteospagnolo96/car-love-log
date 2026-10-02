@@ -141,7 +141,7 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
                 domain={yDomain}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                 stroke="hsl(var(--border))"
-                tickFormatter={(v) => v.toLocaleString("it-IT")}
+                tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toLocaleString("it-IT")}k` : v.toLocaleString("it-IT"))}
                 width={55}
               />
               <Tooltip
