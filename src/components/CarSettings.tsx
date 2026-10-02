@@ -42,6 +42,15 @@ function exportVehicleCSV(vehicle: Vehicle) {
   (vehicle.reminders || []).forEach((r) => {
     lines.push(`"${r.label}",${r.dueDate || ""},${r.dueKm || ""}`);
   });
+  lines.push("");
+
+  // Tire sets (one JSON object per line, includes mount/rotation history)
+  lines.push("=== GOMME ===");
+  lines.push("JSON");
+  (vehicle.tireSets || []).forEach((t) => {
+    lines.push(`"${JSON.stringify(t).replace(/"/g, '""')}"`);
+  });
+
 
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
