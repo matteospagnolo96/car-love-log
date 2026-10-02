@@ -71,6 +71,18 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
     );
   }
 
+  // Y axis adapts to the km range of the selected period
+  const yDomain = useMemo<[number, number]>(() => {
+    const kms = chartData.map((p) => p.km);
+    const min = Math.min(...kms);
+    const max = Math.max(...kms);
+    const span = Math.max(max - min, 1);
+    // Round the floor down to a multiple of span/4 (min 1000) for clean ticks
+    const step = Math.max(span / 4, 1000);
+    const floor = Math.floor((min - step * 0.5) / step) * step;
+    return [Math.max(floor, 0), max + step * 0.5];
+  }, [chartData]);
+
   const formatDate = (ts: number) => {
     const d = new Date(ts);
     return d.toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
@@ -126,10 +138,11 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
                 stroke="hsl(var(--border))"
               />
               <YAxis
+                domain={yDomain}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                 stroke="hsl(var(--border))"
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                width={45}
+                tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toLocaleString("it-IT")}k` : v.toLocaleString("it-IT"))}
+                width={55}
               />
               <Tooltip
                 contentStyle={{
