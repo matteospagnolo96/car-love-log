@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 import type { MileageEntry, MaintenanceEntry } from "@/hooks/useCarData";
@@ -8,7 +8,19 @@ interface MileageChartProps {
   maintenanceEntries: MaintenanceEntry[];
 }
 
+const PERIODS = [
+  { id: "all", label: "Tutto", months: 0 },
+  { id: "1y", label: "1 Anno", months: 12 },
+  { id: "6m", label: "6 Mesi", months: 6 },
+  { id: "3m", label: "3 Mesi", months: 3 },
+  { id: "1m", label: "1 Mese", months: 1 },
+] as const;
+
+type PeriodId = (typeof PERIODS)[number]["id"];
+
 export default function MileageChart({ entries, maintenanceEntries }: MileageChartProps) {
+  const [period, setPeriod] = useState<PeriodId>("all");
+
   const chartData = useMemo(() => {
     const parseDate = (d: string) => {
       if (d.includes("/")) {
@@ -32,16 +44,27 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
       }
     });
 
-    return Array.from(byDate.entries())
+    const full = Array.from(byDate.entries())
       .sort(([a], [b]) => a - b)
       .map(([ts, km]) => ({ ts, km }));
-  }, [entries, maintenanceEntries]);
+
+    // Apply period filter
+    const months = PERIODS.find((p) => p.id === period)?.months ?? 0;
+    if (months > 0) {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - months);
+      return full.filter((p) => p.ts >= cutoff.getTime());
+    }
+    return full;
+  }, [entries, maintenanceEntries, period]);
 
   if (chartData.length < 2) {
     return (
       <div className="rounded-lg bg-card p-5 border border-border/50 text-center">
         <p className="text-muted-foreground text-sm">
-          Registra almeno 2 letture km per vedere il grafico dell'andamento
+          {entries.length + maintenanceEntries.length < 2
+            ? "Registra almeno 2 letture km per vedere il grafico dell'andamento"
+            : "Nessun dato nel periodo selezionato"}
         </p>
       </div>
     );
@@ -60,6 +83,27 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
         </div>
         <span className="font-heading font-semibold">Andamento Chilometri</span>
       </div>
+
+      {/* Period selector */}
+      <div className="flex flex-wrap gap-1">
+        {PERIODS.map((p) => {
+          const isActive = period === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors border ${
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:border-primary/40"
+              }`}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
