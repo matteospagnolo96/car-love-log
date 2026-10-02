@@ -19,6 +19,7 @@ function parseCSV(text: string): Partial<Vehicle> {
       else if (line.includes("REGISTRO CHILOMETRI")) section = "mileage";
       else if (line.includes("REGISTRO MANUTENZIONE")) section = "maintenance";
       else if (line.includes("PROMEMORIA")) section = "reminders";
+      else if (line.includes("GOMME")) section = "tires";
       continue;
     }
 
@@ -27,9 +28,22 @@ function parseCSV(text: string): Partial<Vehicle> {
       line.startsWith("Tipo,") ||
       line.startsWith("Data,Km,") ||
       line.startsWith("Data,Tipo,") ||
-      line.startsWith("Etichetta,")
+      line.startsWith("Etichetta,") ||
+      line === "JSON"
     )
       continue;
+
+    if (section === "tires") {
+      const json = line.replace(/^"|"$/g, "").replace(/""/g, '"');
+      try {
+        const t = JSON.parse(json);
+        if (!result.tireSets) result.tireSets = [];
+        result.tireSets.push({ ...t, id: t.id || crypto.randomUUID() });
+      } catch {
+        /* skip invalid row */
+      }
+      continue;
+    }
 
     const parts = line.split(",").map((p) => p.replace(/^"|"$/g, "").trim());
 
