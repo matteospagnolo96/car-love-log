@@ -21,7 +21,8 @@ type PeriodId = (typeof PERIODS)[number]["id"];
 export default function MileageChart({ entries, maintenanceEntries }: MileageChartProps) {
   const [period, setPeriod] = useState<PeriodId>("all");
 
-  const chartData = useMemo(() => {
+  // Full, deduplicated, chronologically sorted dataset
+  const fullData = useMemo(() => {
     const parseDate = (d: string) => {
       if (d.includes("/")) {
         const [day, month, year] = d.split("/");
@@ -44,27 +45,27 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
       }
     });
 
-    const full = Array.from(byDate.entries())
+    return Array.from(byDate.entries())
       .sort(([a], [b]) => a - b)
       .map(([ts, km]) => ({ ts, km }));
+  }, [entries, maintenanceEntries]);
 
-    // Apply period filter
+  // Dataset limited to the selected period
+  const chartData = useMemo(() => {
     const months = PERIODS.find((p) => p.id === period)?.months ?? 0;
-    if (months > 0) {
-      const cutoff = new Date();
-      cutoff.setMonth(cutoff.getMonth() - months);
-      return full.filter((p) => p.ts >= cutoff.getTime());
-    }
-    return full;
-  }, [entries, maintenanceEntries, period]);
+    if (months === 0) return fullData;
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - months);
+    const cutoffTs = cutoff.getTime();
+    return fullData.filter((p) => p.ts >= cutoffTs);
+  }, [fullData, period]);
 
-  if (chartData.length < 2) {
+  // Not enough data at all -> nothing to plot regardless of period
+  if (fullData.length < 2) {
     return (
       <div className="rounded-lg bg-card p-5 border border-border/50 text-center">
         <p className="text-muted-foreground text-sm">
-          {entries.length + maintenanceEntries.length < 2
-            ? "Registra almeno 2 letture km per vedere il grafico dell'andamento"
-            : "Nessun dato nel periodo selezionato"}
+          Registra almeno 2 letture km per vedere il grafico dell'andamento
         </p>
       </div>
     );
@@ -84,7 +85,7 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
         <span className="font-heading font-semibold">Andamento Chilometri</span>
       </div>
 
-      {/* Period selector */}
+      {/* Period selector - always visible so the user can never get stuck */}
       <div className="flex flex-wrap gap-1">
         {PERIODS.map((p) => {
           const isActive = period === p.id;
@@ -104,46 +105,54 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
         })}
       </div>
 
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis
-              dataKey="ts"
-              type="number"
-              scale="time"
-              domain={["dataMin", "dataMax"]}
-              tickFormatter={formatDate}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              stroke="hsl(var(--border))"
-            />
-            <YAxis
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              stroke="hsl(var(--border))"
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              width={45}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                color: "hsl(var(--foreground))",
-              }}
-              labelFormatter={(ts: number) => new Date(ts).toLocaleDateString("it-IT")}
-              formatter={(value: number) => [`${value.toLocaleString("it-IT")} km`, "Chilometri"]}
-            />
-            <Line
-              type="monotone"
-              dataKey="km"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {chartData.length < 2 ? (
+        <div className="h-64 flex items-center justify-center rounded-md border border-dashed border-border/60">
+          <p className="text-muted-foreground text-sm text-center px-4">
+            Nessun dato nel periodo selezionato
+          </p>
+        </div>
+      ) : (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="ts"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                tickFormatter={formatDate}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                stroke="hsl(var(--border))"
+              />
+              <YAxis
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                stroke="hsl(var(--border))"
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                width={45}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  color: "hsl(var(--foreground))",
+                }}
+                labelFormatter={(ts: number) => new Date(ts).toLocaleDateString("it-IT")}
+                formatter={(value: number) => [`${value.toLocaleString("it-IT")} km`, "Chilometri"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="km"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
