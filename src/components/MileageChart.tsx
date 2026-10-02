@@ -138,10 +138,11 @@ export default function MileageChart({ entries, maintenanceEntries }: MileageCha
                 stroke="hsl(var(--border))"
               />
               <YAxis
+                domain={yDomain}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                 stroke="hsl(var(--border))"
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                width={45}
+                tickFormatter={(v) => v.toLocaleString("it-IT")}
+                width={55}
               />
               <Tooltip
                 contentStyle={{
